@@ -2,7 +2,7 @@ import asyncio
 
 from httpx import AsyncClient
 
-from src.data_crawler.reuqests import request_producer, request_consumer
+from src.data_crawler.requests import request_producer, request_consumer
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 from src.data_crawler.constants import DATA_SRC_URLS, HTTP_CLIENT_CONFIG
 
