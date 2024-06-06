@@ -5,7 +5,7 @@ N_PAGES = 6
 
 DATA_SRC_URLS = {
     'hl-base': 'https://www.hl.co.uk',
-    'hl-ftse-all=share-index': '/shares/stock-market-summary/ftse-all-share',
+    'hl-ftse-all-share-index': '/shares/stock-market-summary/ftse-all-share',
     'hl-financial-statement-and-reports': '/financial-statements-and-reports'
 }
 
