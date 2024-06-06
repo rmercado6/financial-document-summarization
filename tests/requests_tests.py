@@ -1,6 +1,5 @@
 import unittest
 import asyncio
-import inspect
 from unittest import mock
 
 import httpx
@@ -43,10 +42,6 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
         self.queue.task_done()
 
 
-def parse_financial_statements_and_reports(s: str):
-    return True
-
-
 class ConsumerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
@@ -70,19 +65,61 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
     async def test_request_consumer(self):
         await self.queue.put(self.sample_request)
 
-        self.assertEqual(1, self.queue.qsize())
-
         self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, parse_financial_statements_and_reports))
+            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
             for _ in range(10)
         ]
+
         await self.queue.join()
+
         self.client.request.assert_awaited_once()
         self.client.request.assert_awaited_with(**self.request_params)
 
     def tearDown(self):
         [c.cancel() for c in self.consumers]
 
+
+class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
+
+    def setUp(self):
+        self.queue = asyncio.Queue()
+        self.client = mock.AsyncMock(AsyncClient)
+        self.client.request = mock.AsyncMock()
+        self.request_params = {
+            'method': 'GET',
+            'url': 'https://www.hl.co.uk/shares/shares-search-results/B6VTTK0/financial-statements-and-reports'
+        }
+        request = self.client.request(**self.request_params)
+        self.client.request.side_effect = [
+            httpx.Response(status_code=301, headers={'Location': '/foo'}, request=httpx.Request(**self.request_params)),
+            httpx.Response(status_code=200, content='sample content'),
+        ]
+        self.sample_request = {
+            'metadata': {
+                'url_append': '/financial-statements-and-reports'
+            },
+            'request': request
+        }
+        self.requests = [self.sample_request]
+
+    async def test_request_consumer(self):
+        await self.queue.put(self.sample_request)
+
+        self.consumers = [
+            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
+            for _ in range(10)
+        ]
+
+        await self.queue.join()
+
+        self.assertEqual(2, self.client.request.await_count)
+        self.client.request.assert_awaited_with(
+            method='GET',
+            url='/foo/financial-statements-and-reports'
+        )
+
+    def tearDown(self):
+        [c.cancel() for c in self.consumers]
 
 if __name__ == '__main__':
     unittest.main()

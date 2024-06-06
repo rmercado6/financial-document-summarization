@@ -21,7 +21,7 @@ async def request_consumer(client: AsyncClient, queue: asyncio.Queue, consumer_f
         __response = await __queue_item['request']
         if __response.is_redirect:
             m = __queue_item['metadata']
-            url = __response.headers['Location'] + m['url_append'] if 'url_append' in m.keys() else __response['url']
+            url = __response.headers['Location'] + m['url_append'] if 'url_append' in m.keys() else __response.headers['Location']
             m.update({
                 'redirected': {
                     'from': __response.request.url,
