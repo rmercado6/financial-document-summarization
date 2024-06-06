@@ -23,7 +23,6 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
 
 
 async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
-    __stocks_url_queue = list(stocks.values()).copy()
     queue = asyncio.Queue()
     client = AsyncClient(**HTTP_CLIENT_CONFIG)
 
