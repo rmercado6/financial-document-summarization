@@ -14,4 +14,5 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
 
 
 def parse_financial_statements_and_reports(response_text: str) -> dict[str, str]:
-    return
+    print('OK')
+    return {}

@@ -1,5 +1,5 @@
 import unittest
-from src.data_crawler.hl_index_parser import parse_stocks_table, parse_financial_statements_and_reports
+from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 
 
 class HlIndexParserTests(unittest.TestCase):
