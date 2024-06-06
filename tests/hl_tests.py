@@ -2,7 +2,7 @@ import unittest
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 
 
-class HlIndexParserTests(unittest.TestCase):
+class HlParseTests(unittest.TestCase):
 
     def test_parse_stocks_table(self) -> None:
         with open('./tests/mocks/data_crawler/hl-stocks-table.mock.html', 'r') as f:
@@ -17,6 +17,14 @@ class HlIndexParserTests(unittest.TestCase):
             mock_response = ''.join([line for line in f.readlines()])
         fin_data: dict[str, str] = parse_financial_statements_and_reports(mock_response)
         self.assertEqual(dict, type(fin_data))
+
+
+class HlScrapeTests(unittest.TestCase):
+    def test_scrape_hl_index_stocks_table(self):
+        self.assertEqual(True, False)  # add assertion here
+
+    def test_scrape_hl_index_stock_pages(self):
+        self.assertEqual(True, False)  # add assertion here
 
 
 if __name__ == '__main__':
