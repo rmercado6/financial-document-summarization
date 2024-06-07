@@ -17,6 +17,10 @@ class HlParseTests(unittest.TestCase):
             mock_response = ''.join([line for line in f.readlines()])
         fin_data: dict[str, str] = parse_financial_statements_and_reports(mock_response)
         self.assertEqual(dict, type(fin_data))
+        self.assertGreaterEqual(3, len(fin_data.keys()))
+        self.assertTrue('annual_report_and_accounts' in fin_data.keys())
+        self.assertTrue('interim_report_and_accounts' in fin_data.keys())
+        self.assertTrue('financial_results' in fin_data.keys())
 
 
 class HlScrapeTests(unittest.TestCase):
