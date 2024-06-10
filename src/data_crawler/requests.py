@@ -42,6 +42,5 @@ async def request_consumer(
                 response = await consumer_function(__response.text)
             else:
                 response = consumer_function(__response.text)
-            print(response)
             await response_queue.put(response)
         queue.task_done()

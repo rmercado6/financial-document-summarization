@@ -63,7 +63,6 @@ class HlScrapeFinancialStatementsPageTest(unittest.IsolatedAsyncioTestCase):
         })
 
         async_client_mock.assert_awaited()
-        print(r)
 
 
 if __name__ == '__main__':
