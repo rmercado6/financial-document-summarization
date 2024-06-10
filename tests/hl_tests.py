@@ -58,7 +58,7 @@ class HlScrapeFinancialStatementsPageTest(unittest.IsolatedAsyncioTestCase):
             content=financial_statements_page_mock_response
         )
 
-        r = await scrape_hl_index_stock_pages({
+        await scrape_hl_index_stock_pages({
             'Abrdn plc': '/shares/shares-search-results/BF8Q6K6',
         })
 

@@ -33,14 +33,15 @@ async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
                 'url_append': DATA_SRC_URLS['hl-financial-statement-and-reports']
             },
             'method': 'GET',
-            'url': DATA_SRC_URLS['hl-base'] + url
+            'url': DATA_SRC_URLS['hl-base'] + url,
+            'consumer': parse_financial_statements_and_reports
         }
         for url in stocks.values()
     ]
 
     producers = [asyncio.create_task(request_producer(client, queue, requests)) for _ in range(3)]
     consumers = [
-        asyncio.create_task(request_consumer(client, queue, parse_financial_statements_and_reports, responses))
+        asyncio.create_task(request_consumer(client, queue, responses))
         for _ in range(10)
     ]
 

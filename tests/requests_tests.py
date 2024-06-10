@@ -5,7 +5,7 @@ from unittest import mock
 import httpx
 from httpx import AsyncClient
 
-from src.data_crawler.requests import request_consumer, request_producer
+from src.data_crawler.requests import Request, request_consumer, request_producer
 
 
 class ProducerTest(unittest.IsolatedAsyncioTestCase):
@@ -18,7 +18,8 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             'method': 'GET',
-            'url': 'ttps://www.hl.co.uk/shares/shares-search-results/B6VTTK0'
+            'url': 'ttps://www.hl.co.uk/shares/shares-search-results/B6VTTK0',
+            'consumer': lambda x: True
         }
         self.requests = [self.sample_request]
 
@@ -30,10 +31,10 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
         item = await self.queue.get()
 
-        self.assertEqual(['metadata', 'request'], list(item.keys()))
-        self.assertEqual(self.sample_request['metadata'], item['metadata'])
+        self.assertEqual(Request, type(item))
+        self.assertEqual(self.sample_request['metadata'], item.metadata)
 
-        await item['request']
+        await item.request
 
         self.client.request.assert_awaited_with(
             method=self.sample_request['method'],
@@ -55,19 +56,19 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             'method': 'GET',
             'url': 'https://www.hl.co.uk/shares/shares-search-results/B6VTTK0/financial-statements-and-reports'
         }
-        self.sample_request = {
-            'metadata': {
+        self.sample_request = Request(
+            metadata={
                 'url_append': '/financial-statements-and-reports'
             },
-            'request': self.client.request(**self.request_params)
-        }
-        self.requests = [self.sample_request]
+            request=self.client.request(**self.request_params),
+            consumer=lambda x: True
+        )
 
     async def test_request_consumer(self):
         await self.queue.put(self.sample_request)
 
         self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True, self.responses))
+            asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
             for _ in range(10)
         ]
 
@@ -103,19 +104,19 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             httpx.Response(status_code=301, headers={'Location': '/foo'}, request=httpx.Request(**self.request_params)),
             httpx.Response(status_code=200, content='sample content'),
         ]
-        self.sample_request = {
-            'metadata': {
+        self.sample_request = Request(
+            metadata={
                 'url_append': '/financial-statements-and-reports'
             },
-            'request': request
-        }
-        self.requests = [self.sample_request]
+            request=request,
+            consumer=lambda x: True
+        )
 
     async def test_request_consumer(self):
         await self.queue.put(self.sample_request)
 
         self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True, self.responses))
+            asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
             for _ in range(10)
         ]
 
@@ -133,6 +134,31 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
         self.responses.task_done()
 
         self.assertTrue(item)
+
+    def tearDown(self):
+        [c.cancel() for c in self.consumers]
+
+
+class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
+
+    def setUp(self):
+        self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
+        self.client = mock.AsyncMock(AsyncClient)
+        self.sample_request = {}
+
+    async def test_request_consumer(self):
+        await self.queue.put(self.sample_request)
+
+        self.consumers = [
+            asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
+            for _ in range(10)
+        ]
+
+        await self.queue.join()
+
+        self.client.request.assert_not_awaited()
+        self.assertTrue(self.responses.empty())
 
     def tearDown(self):
         [c.cancel() for c in self.consumers]
