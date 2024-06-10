@@ -2,6 +2,8 @@ import re
 
 from lxml import etree
 
+from src.data_crawler.requests import Request, ConsumerResponse
+
 
 def parse_stocks_table(response_text: str) -> dict[str, str]:
     parser = etree.HTMLParser()
@@ -15,9 +17,9 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
     return data
 
 
-def parse_financial_statements_and_reports(response_text: str) -> dict[str, str]:
+def parse_financial_statements_and_reports(request: Request) -> ConsumerResponse:
     parser = etree.HTMLParser()
-    selector = etree.fromstring(response_text, parser)
+    selector = etree.fromstring(request.response.text, parser)
     data = {}
 
     # Gather annual and interim reports download urls
@@ -38,4 +40,5 @@ def parse_financial_statements_and_reports(response_text: str) -> dict[str, str]
         financial_results_lines.append([re.sub(r'(\n|\t)+', '', x) for x in row.xpath(f"./{cell}/text()")])
     data['financial_results'] = '\n'.join(['\t'.join(l) for l in financial_results_lines])
 
-    return data
+    # return data
+    return ConsumerResponse(request.metadata.copy(), data, [])

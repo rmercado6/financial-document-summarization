@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table, scrape_hl_index_stock_pages
+from src.data_crawler.requests import Request, ConsumerResponse
 
 
 with open('./tests/mocks/data_crawler/hl-stocks-table.mock.html', 'r') as f:
@@ -17,6 +18,10 @@ with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 
 
 class HlParseTests(unittest.TestCase):
 
+    def setUp(self):
+        self.financial_statements_page_mock_request: Request = MagicMock(Request)
+        self.financial_statements_page_mock_request.response.text = financial_statements_page_mock_response
+
     def test_parse_stocks_table(self) -> None:
         stocks: dict[str, str] = parse_stocks_table(stocks_table_mock_response)
         self.assertEqual(dict, type(stocks))
@@ -24,7 +29,8 @@ class HlParseTests(unittest.TestCase):
         self.assertEqual('/shares/shares-search-results/0664097', stocks['4imprint Group plc'])
 
     def test_parse_financial_statements_and_reports(self) -> None:
-        fin_data: dict[str, str] = parse_financial_statements_and_reports(financial_statements_page_mock_response)
+        response: ConsumerResponse = parse_financial_statements_and_reports(self.financial_statements_page_mock_request)
+        fin_data: dict[str, str] = response.data
         self.assertEqual(dict, type(fin_data))
         self.assertGreaterEqual(3, len(fin_data.keys()))
         self.assertTrue('annual_report_and_accounts' in fin_data.keys())

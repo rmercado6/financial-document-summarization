@@ -41,21 +41,27 @@ class Request:
         return self.__consumer
 
 
-# class Response:
-#     __metadata: dict
-#     __response: httpx.Response
-#
-#     def __init__(self, metadata: dict, response: httpx.Response) -> None:
-#         self.__metadata = metadata.copy()
-#         self.__response = response
-#
-#     @property
-#     def metadata(self) -> dict:
-#         return self.__metadata
-#
-#     @property
-#     def response(self) -> httpx.Response:
-#         return self.__response
+class ConsumerResponse:
+    __metadata: dict
+    __data: any
+    __further_requests: list[Request] or None
+
+    def __init__(self, metadata: dict, data: any, further_requests: list[Request] = None) -> None:
+        self.__metadata = metadata.copy()
+        self.__data = data
+        self.__further_requests = further_requests
+
+    @property
+    def metadata(self) -> dict:
+        return self.__metadata
+
+    @property
+    def data(self) -> any:
+        return self.__data
+
+    @property
+    def further_requests(self):
+        return self.__further_requests
 
 
 async def request_producer(client: AsyncClient, queue: asyncio.Queue, requests: list[dict[str, any]]):
@@ -81,7 +87,7 @@ async def request_consumer(
 
         # Verify queue item is a compatible Request, remove if not
         if type(__queue_item) is not Request:
-            # must log 'Queue items must be of type Request'
+            # TODO: must log 'Queue items must be of type Request'
             queue.task_done()
             continue
 
@@ -104,10 +110,12 @@ async def request_consumer(
         # Process successful requests
         elif __queue_item.response.is_success:
             if iscoroutinefunction(__queue_item.consumer):
-                response = await __queue_item.consumer(__queue_item.response.text)
+                response = await __queue_item.consumer(__queue_item)
             else:
-                response = __queue_item.consumer(__queue_item.response.text)
+                response = __queue_item.consumer(__queue_item)
             await response_queue.put(response)
+            if response.further_requests:
+                [queue.put(request) for request in response.further_requests]
 
         # Remove processed item from queue
         queue.task_done()
