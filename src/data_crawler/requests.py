@@ -15,7 +15,12 @@ async def request_producer(client: AsyncClient, queue: asyncio.Queue, requests: 
         })
 
 
-async def request_consumer(client: AsyncClient, queue: asyncio.Queue, consumer_function: Callable):
+async def request_consumer(
+        client: AsyncClient,
+        queue: asyncio.Queue,
+        consumer_function: Callable,
+        response_queue: asyncio.Queue
+):
     while True:
         __queue_item = await queue.get()
         __response = await __queue_item['request']
@@ -34,7 +39,9 @@ async def request_consumer(client: AsyncClient, queue: asyncio.Queue, consumer_f
             })
         elif __response.is_success:
             if iscoroutinefunction(consumer_function):
-                await consumer_function(__response.text)
+                response = await consumer_function(__response.text)
             else:
-                consumer_function(__response.text)
+                response = consumer_function(__response.text)
+            print(response)
+            await response_queue.put(response)
         queue.task_done()

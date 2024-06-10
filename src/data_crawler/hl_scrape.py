@@ -24,6 +24,7 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
 
 async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
     queue = asyncio.Queue()
+    responses = asyncio.Queue()
     client = AsyncClient(**HTTP_CLIENT_CONFIG)
 
     requests = [
@@ -39,13 +40,11 @@ async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
 
     producers = [asyncio.create_task(request_producer(client, queue, requests)) for _ in range(3)]
     consumers = [
-        asyncio.create_task(request_consumer(client, queue, parse_financial_statements_and_reports))
+        asyncio.create_task(request_consumer(client, queue, parse_financial_statements_and_reports, responses))
         for _ in range(10)
     ]
 
     await asyncio.gather(*producers)
-    print(' --- finish request producing ---')
-
     await queue.join()
 
     [c.cancel() for c in consumers]

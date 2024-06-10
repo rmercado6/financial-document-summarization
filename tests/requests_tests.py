@@ -46,6 +46,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
         self.client.request = mock.AsyncMock(return_value=httpx.Response(
             status_code=200, content='sample content'
@@ -66,7 +67,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
         await self.queue.put(self.sample_request)
 
         self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
+            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True, self.responses))
             for _ in range(10)
         ]
 
@@ -74,6 +75,13 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
 
         self.client.request.assert_awaited_once()
         self.client.request.assert_awaited_with(**self.request_params)
+        self.assertFalse(self.responses.empty())
+        self.assertEqual(1, self.responses.qsize())
+
+        item = await self.responses.get()
+        self.responses.task_done()
+
+        self.assertTrue(item)
 
     def tearDown(self):
         [c.cancel() for c in self.consumers]
@@ -83,6 +91,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
         self.client.request = mock.AsyncMock()
         self.request_params = {
@@ -106,7 +115,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
         await self.queue.put(self.sample_request)
 
         self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
+            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True, self.responses))
             for _ in range(10)
         ]
 
@@ -117,9 +126,17 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             method='GET',
             url='/foo/financial-statements-and-reports'
         )
+        self.assertFalse(self.responses.empty())
+        self.assertEqual(1, self.responses.qsize())
+
+        item = await self.responses.get()
+        self.responses.task_done()
+
+        self.assertTrue(item)
 
     def tearDown(self):
         [c.cancel() for c in self.consumers]
+
 
 if __name__ == '__main__':
     unittest.main()
