@@ -60,7 +60,7 @@ def parse_financial_statements_and_reports(
 
     # Gather annual and interim reports download urls & Build new requests
     requests = []
-    for a in selector.xpath("//div[@class='margin-top tab-content clearfix']//a"):
+    for a in selector.xpath("//div[@class='margin-top tab-content clearfix']/div[@class='grey-gradient clearfix']//a"):
         m = request.metadata.copy()
         m.update({
             'data_type': re.sub(
