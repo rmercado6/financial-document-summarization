@@ -4,7 +4,7 @@ from httpx import AsyncClient
 
 from src.data_crawler.requests import request_producer, request_consumer
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
-from src.data_crawler.constants import DATA_SRC_URLS, HTTP_CLIENT_CONFIG
+from src.data_crawler.constants import DATA_SRC_URLS, HTTP_CLIENT_CONFIG, ASYNC_AWAIT_TIMEOUT
 
 
 async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, str]:
@@ -23,7 +23,7 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
 
 
 async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
-    async with asyncio.timeout(5):
+    async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         queue = asyncio.Queue()
         responses = asyncio.Queue()
         client = AsyncClient(**HTTP_CLIENT_CONFIG)

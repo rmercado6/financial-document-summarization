@@ -1,7 +1,9 @@
 import re
+import pypdf
 
 from httpx import AsyncClient
 from lxml import etree
+from io import BytesIO
 
 from src.data_crawler.requests import Request, ConsumerResponse
 
@@ -23,26 +25,6 @@ def parse_financial_statements_and_reports(request: Request, client: AsyncClient
     selector = etree.fromstring(request.response.text, parser)
     data = {'src': request.response.request.url}
 
-    # Gather annual and interim reports download urls & TODO: Build new requests
-    requests = []
-    for a in selector.xpath("//div[@class='margin-top tab-content clearfix']//a"):
-        m = request.metadata.copy()
-        m.update({
-            'data_type': re.sub(
-                r'(\n|\t|Download|download)',
-                '',
-                ''.join(a.xpath('.//text()'))
-            ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
-            'url_append': ''
-        })
-        requests.append(
-            Request(
-                metadata=m,
-                request=client.request(method="GET", url=a.xpath("@href")[0]),
-                consumer=lambda x, y: ConsumerResponse({}, '', None)
-            )
-        )
-
     # Gather financial results tables information
     financial_results_lines = []
     for row in selector.xpath("//div[@id='financials-table-wrapper']/table[contains(@class, 'factsheet-table')]/tbody/tr"):
@@ -62,5 +44,59 @@ def parse_financial_statements_and_reports(request: Request, client: AsyncClient
     }
     data['share'] = share
 
+    # Gather annual and interim reports download urls & TODO: Build new requests
+    requests = []
+    for a in selector.xpath("//div[@class='margin-top tab-content clearfix']//a"):
+        m = request.metadata.copy()
+        m.update({
+            'data_type': re.sub(
+                r'(\n|\t|Download|download)',
+                '',
+                ''.join(a.xpath('.//text()'))
+            ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
+            'url_append': '',
+            'share': share
+        })
+        requests.append(
+            Request(
+                metadata=m,
+                request=client.request(method="GET", url=a.xpath("@href")[0]),
+                consumer=parse_financial_reports_pdf_file
+            )
+        )
+
+    m = request.metadata.copy()
+    m.update({
+        'src': request.response.request.url,
+        'data_type': 'financial_results',
+        'url_append': '',
+        'share': share
+    })
     # return data
-    return ConsumerResponse(request.metadata.copy(), data, requests)
+    return ConsumerResponse(m, data, requests)
+
+
+def parse_financial_reports_pdf_file(request: Request, client: AsyncClient or None = None) -> ConsumerResponse:
+    """
+    Parse financial report PDF file responses into plain text
+
+    :param request: Request data-crawler request containing the request info
+    :param client: AsyncClient or None client sent by request consumers, useful if new requests are to be made
+    :return: ConsumerResponse object containing the parsed data
+    """
+    # print(request.response.content)
+    data = ''
+    byte_stream = BytesIO(request.response.content)
+    pdf_reader = pypdf.PdfReader(byte_stream)
+    for page in pdf_reader.pages:
+        data += page.extract_text()
+
+    return ConsumerResponse(
+        metadata={
+            'src': request.response.request.url,
+            'data_type': request.metadata['data_type'],
+            'url_append': '',
+            'share': request.metadata['share']
+        },
+        data=data
+    )

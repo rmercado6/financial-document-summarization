@@ -6,6 +6,7 @@ import httpx
 from httpx import AsyncClient
 
 from src.data_crawler.requests import Request, request_consumer, request_producer, ConsumerResponse
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
 
 
 class ProducerTest(unittest.IsolatedAsyncioTestCase):
@@ -24,7 +25,7 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
         self.requests = [self.sample_request]
 
     async def test_request_producer(self):
-        async with asyncio.timeout(5):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             producers = [asyncio.create_task(request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
             await asyncio.gather(*producers)
 
@@ -62,11 +63,11 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=self.client.request(**self.request_params),
-            consumer=lambda x, y: ConsumerResponse({}, '', [])
+            consumer=lambda x, client: ConsumerResponse({}, '', [])
         )
 
     async def test_request_consumer(self):
-        async with asyncio.timeout(5):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
@@ -114,11 +115,11 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=request,
-            consumer=lambda x, y: ConsumerResponse({}, '', [])
+            consumer=lambda x, client: ConsumerResponse({}, '', [])
         )
 
     async def test_request_consumer_with_redirect(self):
-        async with asyncio.timeout(5):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
@@ -149,7 +150,7 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
         self.sample_request = {}
 
     async def test_request_consumer(self):
-        async with asyncio.timeout(5):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
             self.consumers = [

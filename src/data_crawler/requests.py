@@ -1,11 +1,11 @@
 import asyncio
-from asyncio import timeout
+import httpx
 
 from typing import Callable, Coroutine, Awaitable
 from inspect import iscoroutinefunction
-
-import httpx
 from httpx import AsyncClient
+
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
 
 
 class Request:
@@ -83,7 +83,7 @@ async def request_consumer(
         queue: asyncio.Queue,
         response_queue: asyncio.Queue
 ):
-    async with timeout(5):
+    async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         while True:
             __queue_item = await queue.get()
 
@@ -112,9 +112,9 @@ async def request_consumer(
             # Process successful requests
             elif __queue_item.response.is_success:
                 if iscoroutinefunction(__queue_item.consumer):
-                    response = await __queue_item.consumer(__queue_item, client)
+                    response = await __queue_item.consumer(__queue_item, client=client)
                 else:
-                    response = __queue_item.consumer(__queue_item, client)
+                    response = __queue_item.consumer(__queue_item, client=client)
                 await response_queue.put(response)
                 if response.further_requests:
                     [await queue.put(request) for request in response.further_requests]
