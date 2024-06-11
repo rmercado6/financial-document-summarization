@@ -23,29 +23,30 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
 
 
 async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
-    queue = asyncio.Queue()
-    responses = asyncio.Queue()
-    client = AsyncClient(**HTTP_CLIENT_CONFIG)
+    async with asyncio.timeout(5):
+        queue = asyncio.Queue()
+        responses = asyncio.Queue()
+        client = AsyncClient(**HTTP_CLIENT_CONFIG)
 
-    requests = [
-        {
-            'metadata': {
-                'url_append': DATA_SRC_URLS['hl-financial-statement-and-reports']
-            },
-            'method': 'GET',
-            'url': DATA_SRC_URLS['hl-base'] + url,
-            'consumer': parse_financial_statements_and_reports
-        }
-        for url in stocks.values()
-    ]
+        requests = [
+            {
+                'metadata': {
+                    'url_append': DATA_SRC_URLS['hl-financial-statement-and-reports']
+                },
+                'method': 'GET',
+                'url': DATA_SRC_URLS['hl-base'] + url,
+                'consumer': parse_financial_statements_and_reports
+            }
+            for url in stocks.values()
+        ]
 
-    producers = [asyncio.create_task(request_producer(client, queue, requests)) for _ in range(3)]
-    consumers = [
-        asyncio.create_task(request_consumer(client, queue, responses))
-        for _ in range(10)
-    ]
+        producers = [asyncio.create_task(request_producer(client, queue, requests)) for _ in range(3)]
+        consumers = [
+            asyncio.create_task(request_consumer(client, queue, responses))
+            for _ in range(10)
+        ]
 
-    await asyncio.gather(*producers)
-    await queue.join()
+        await asyncio.gather(*producers)
+        await queue.join()
 
-    [c.cancel() for c in consumers]
+        [c.cancel() for c in consumers]

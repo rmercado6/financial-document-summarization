@@ -62,7 +62,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=self.client.request(**self.request_params),
-            consumer=lambda x: ConsumerResponse({}, '', [])
+            consumer=lambda x, y: ConsumerResponse({}, '', [])
         )
 
     async def test_request_consumer(self):
@@ -114,7 +114,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=request,
-            consumer=lambda x: ConsumerResponse({}, '', [])
+            consumer=lambda x, y: ConsumerResponse({}, '', [])
         )
 
     async def test_request_consumer(self):

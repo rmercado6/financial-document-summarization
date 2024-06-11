@@ -1,5 +1,6 @@
 import re
 
+from httpx import AsyncClient
 from lxml import etree
 
 from src.data_crawler.requests import Request, ConsumerResponse
@@ -17,20 +18,30 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
     return data
 
 
-def parse_financial_statements_and_reports(request: Request) -> ConsumerResponse:
+def parse_financial_statements_and_reports(request: Request, client: AsyncClient or None = None) -> ConsumerResponse:
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
     data = {'src': request.response.request.url}
 
     # Gather annual and interim reports download urls & TODO: Build new requests
+    requests = []
     for a in selector.xpath("//div[@class='margin-top tab-content clearfix']//a"):
-        data[
-            re.sub(
+        m = request.metadata.copy()
+        m.update({
+            'data_type': re.sub(
                 r'(\n|\t|Download|download)',
                 '',
                 ''.join(a.xpath('.//text()'))
-            ).strip().replace('&amp', 'and').lower().replace(' ', '_')
-        ] = a.xpath("@href")[0]
+            ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
+            'url_append': ''
+        })
+        requests.append(
+            Request(
+                metadata=m,
+                request=client.request(method="GET", url=a.xpath("@href")[0]),
+                consumer=lambda x, y: ConsumerResponse({}, '', None)
+            )
+        )
 
     # Gather financial results tables information
     financial_results_lines = []
@@ -52,4 +63,4 @@ def parse_financial_statements_and_reports(request: Request) -> ConsumerResponse
     data['share'] = share
 
     # return data
-    return ConsumerResponse(request.metadata.copy(), data, [])
+    return ConsumerResponse(request.metadata.copy(), data, requests)

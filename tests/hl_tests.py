@@ -1,7 +1,7 @@
 import unittest
 import httpx
 
-from unittest import IsolatedAsyncioTestCase
+from unittest import TestCase, IsolatedAsyncioTestCase
 from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
@@ -16,12 +16,14 @@ with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 
     financial_statements_page_mock_response = ''.join([line for line in f.readlines()])
 
 
-class HlParseTests(unittest.TestCase):
+class HlParseStockTableTests(TestCase):
 
     def setUp(self):
         self.financial_statements_page_mock_request: Request = MagicMock(Request, metadata={})
         self.financial_statements_page_mock_request.response.text = financial_statements_page_mock_response
         self.financial_statements_page_mock_request.response.request.url = 'http://test.url'
+        self.mock_client = MagicMock(httpx.AsyncClient)
+        self.mock_client.request.return_value = httpx.Response(status_code=200)
 
     def test_parse_stocks_table(self) -> None:
         stocks: dict[str, str] = parse_stocks_table(stocks_table_mock_response)
@@ -30,7 +32,10 @@ class HlParseTests(unittest.TestCase):
         self.assertEqual('/shares/shares-search-results/0664097', stocks['4imprint Group plc'])
 
     def test_parse_financial_statements_and_reports(self) -> None:
-        response: ConsumerResponse = parse_financial_statements_and_reports(self.financial_statements_page_mock_request)
+        response: ConsumerResponse = parse_financial_statements_and_reports(
+            self.financial_statements_page_mock_request,
+            client=self.mock_client
+        )
         self.assertTrue(type(response) is ConsumerResponse)
         self.assertTrue(type(response.metadata) is dict)
         self.assertTrue(type(response.data) is dict)
@@ -52,6 +57,13 @@ class HlParseTests(unittest.TestCase):
         self.assertTrue('epic' in response.data['share'].keys())
         self.assertTrue('identifier' in response.data['share'].keys())
 
+        # Assert the extraction of PDF report urls
+        self.assertGreaterEqual(len(response.further_requests), 2)
+        for r in response.further_requests:
+            self.assertTrue(type(r) is Request)
+            self.assertTrue('url_append' in r.metadata.keys())
+            self.assertTrue('data_type' in r.metadata.keys())
+
 
 class HlScrapeStocksTableTest(IsolatedAsyncioTestCase):
 
@@ -70,16 +82,27 @@ class HlScrapeStocksTableTest(IsolatedAsyncioTestCase):
         self.assertTrue('Abrdn plc' in r.keys())
 
 
-class HlScrapeFinancialStatementsPageTest(unittest.IsolatedAsyncioTestCase):
+class HlScrapeFinancialStatementsPageTest(IsolatedAsyncioTestCase):
 
     @patch('httpx.AsyncClient.request', new_callable=AsyncMock)
     async def test_scrape_hl_index_stock_pages(self, async_client_mock: AsyncMock) -> None:
-        async_client_mock.return_value = httpx.Response(
-            status_code=200,
-            content=financial_statements_page_mock_response,
-            request=httpx.Request(method='GET', url='')
-        )
-
+        async_client_mock.side_effect = [
+            httpx.Response(
+                status_code=200,
+                content=financial_statements_page_mock_response,
+                request=httpx.Request(method='GET', url='')
+            ),
+            httpx.Response(
+                status_code=200,
+                content='test',
+                request=httpx.Request(method='GET', url='')
+            ),
+            httpx.Response(
+                status_code=200,
+                content='test',
+                request=httpx.Request(method='GET', url='')
+            )
+        ]
         await scrape_hl_index_stock_pages({
             'Abrdn plc': '/shares/shares-search-results/BF8Q6K6',
         })

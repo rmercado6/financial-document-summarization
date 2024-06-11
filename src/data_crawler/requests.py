@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import timeout
 
 from typing import Callable, Coroutine, Awaitable
 from inspect import iscoroutinefunction
@@ -82,40 +83,41 @@ async def request_consumer(
         queue: asyncio.Queue,
         response_queue: asyncio.Queue
 ):
-    while True:
-        __queue_item = await queue.get()
+    async with timeout(5):
+        while True:
+            __queue_item = await queue.get()
 
-        # Verify queue item is a compatible Request, remove if not
-        if type(__queue_item) is not Request:
-            # TODO: must log 'Queue items must be of type Request'
-            queue.task_done()
-            continue
+            # Verify queue item is a compatible Request, remove if not
+            if type(__queue_item) is not Request:
+                # TODO: must log 'Queue items must be of type Request'
+                queue.task_done()
+                continue
 
-        await __queue_item.request
+            await __queue_item.request
 
-        # Process redirected responses
-        if __queue_item.response.is_redirect:
-            url = __queue_item.response.headers['Location']
-            if 'url_append' in __queue_item.metadata.keys():
-                url += __queue_item.metadata['url_append']
-            __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
-            await queue.put(
-                Request(
-                    metadata=__queue_item.metadata,
-                    request=client.request(method=__queue_item.response.request.method, url=url),
-                    consumer=__queue_item.consumer
+            # Process redirected responses
+            if __queue_item.response.is_redirect:
+                url = __queue_item.response.headers['Location']
+                if 'url_append' in __queue_item.metadata.keys():
+                    url += __queue_item.metadata['url_append']
+                __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
+                await queue.put(
+                    Request(
+                        metadata=__queue_item.metadata,
+                        request=client.request(method=__queue_item.response.request.method, url=url),
+                        consumer=__queue_item.consumer
+                    )
                 )
-            )
 
-        # Process successful requests
-        elif __queue_item.response.is_success:
-            if iscoroutinefunction(__queue_item.consumer):
-                response = await __queue_item.consumer(__queue_item)
-            else:
-                response = __queue_item.consumer(__queue_item)
-            await response_queue.put(response)
-            if response.further_requests:
-                [queue.put(request) for request in response.further_requests]
+            # Process successful requests
+            elif __queue_item.response.is_success:
+                if iscoroutinefunction(__queue_item.consumer):
+                    response = await __queue_item.consumer(__queue_item, client)
+                else:
+                    response = __queue_item.consumer(__queue_item, client)
+                await response_queue.put(response)
+                if response.further_requests:
+                    [await queue.put(request) for request in response.further_requests]
 
-        # Remove processed item from queue
-        queue.task_done()
+            # Remove processed item from queue
+            queue.task_done()
