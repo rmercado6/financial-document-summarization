@@ -19,8 +19,9 @@ with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 
 class HlParseTests(unittest.TestCase):
 
     def setUp(self):
-        self.financial_statements_page_mock_request: Request = MagicMock(Request)
+        self.financial_statements_page_mock_request: Request = MagicMock(Request, metadata={})
         self.financial_statements_page_mock_request.response.text = financial_statements_page_mock_response
+        self.financial_statements_page_mock_request.response.request.url = 'http://test.url'
 
     def test_parse_stocks_table(self) -> None:
         stocks: dict[str, str] = parse_stocks_table(stocks_table_mock_response)
@@ -30,12 +31,26 @@ class HlParseTests(unittest.TestCase):
 
     def test_parse_financial_statements_and_reports(self) -> None:
         response: ConsumerResponse = parse_financial_statements_and_reports(self.financial_statements_page_mock_request)
-        fin_data: dict[str, str] = response.data
-        self.assertEqual(dict, type(fin_data))
-        self.assertGreaterEqual(3, len(fin_data.keys()))
-        self.assertTrue('annual_report_and_accounts' in fin_data.keys())
-        self.assertTrue('interim_report_and_accounts' in fin_data.keys())
-        self.assertTrue('financial_results' in fin_data.keys())
+        self.assertTrue(type(response) is ConsumerResponse)
+        self.assertTrue(type(response.metadata) is dict)
+        self.assertTrue(type(response.data) is dict)
+        self.assertTrue(type(response.further_requests) is list)
+        self.assertGreaterEqual(len(response.data.keys()), 3)
+
+        # Assert the inclusion of information source in response
+        self.assertTrue('src' in response.data.keys())
+        self.assertEqual('http://test.url', response.data['src'])
+
+        # Assert the inclusion of the scraped financial results reports tables
+        self.assertTrue('financial_results' in response.data.keys())
+
+        # Assert the inclusion of the scraped share information
+        self.assertTrue('share' in response.data.keys())
+        self.assertTrue('title' in response.data['share'].keys())
+        self.assertTrue('description' in response.data['share'].keys())
+        self.assertTrue('sedol' in response.data['share'].keys())
+        self.assertTrue('epic' in response.data['share'].keys())
+        self.assertTrue('identifier' in response.data['share'].keys())
 
 
 class HlScrapeStocksTableTest(IsolatedAsyncioTestCase):
@@ -61,7 +76,8 @@ class HlScrapeFinancialStatementsPageTest(unittest.IsolatedAsyncioTestCase):
     async def test_scrape_hl_index_stock_pages(self, async_client_mock: AsyncMock) -> None:
         async_client_mock.return_value = httpx.Response(
             status_code=200,
-            content=financial_statements_page_mock_response
+            content=financial_statements_page_mock_response,
+            request=httpx.Request(method='GET', url='')
         )
 
         await scrape_hl_index_stock_pages({

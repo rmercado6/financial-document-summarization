@@ -20,9 +20,9 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
 def parse_financial_statements_and_reports(request: Request) -> ConsumerResponse:
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
-    data = {}
+    data = {'src': request.response.request.url}
 
-    # Gather annual and interim reports download urls
+    # Gather annual and interim reports download urls & TODO: Build new requests
     for a in selector.xpath("//div[@class='margin-top tab-content clearfix']//a"):
         data[
             re.sub(
@@ -39,6 +39,17 @@ def parse_financial_statements_and_reports(request: Request) -> ConsumerResponse
         cell = 'th' if class_list == 'factsheet-head' else 'td'
         financial_results_lines.append([re.sub(r'(\n|\t)+', '', x) for x in row.xpath(f"./{cell}/text()")])
     data['financial_results'] = '\n'.join(['\t'.join(l) for l in financial_results_lines])
+
+    # Gather share information
+    share = {
+        'title': selector.xpath("//head/meta[@name='Share_Title']/@content")[0],
+        'description': selector.xpath("//head/meta[@name='Share_Description']/@content")[0],
+        'sedol': selector.xpath("//head/meta[@name='Share_Sedol']/@content")[0],
+        'epic': selector.xpath("//head/meta[@name='Share_EPIC']/@content")[0],
+        'identifier': selector.xpath("//head/meta[@name='Share_Identifier']/@content")[0],
+        'tradeable': selector.xpath("//head/meta[@name='Share_Tradeable']/@content")[0],
+    }
+    data['share'] = share
 
     # return data
     return ConsumerResponse(request.metadata.copy(), data, [])
