@@ -8,7 +8,10 @@ from httpx import AsyncClient
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
 
 
-class Request:
+class ScrapeRequest:
+    """ScrapeRequests class
+    Abstracts the information of each of the scraping requests.
+    """
     __metadata: dict
     __request: httpx.Request or Coroutine[Callable[..., Awaitable[None]]]
     __response: httpx.Response
@@ -26,51 +29,79 @@ class Request:
 
     @property
     def metadata(self) -> dict:
+        """metadata: dict"""
         return self.__metadata
 
     @property
-    async def request(self) -> httpx.Request or Coroutine[Callable[..., Awaitable[None]]]:
+    async def request(self) -> httpx.Response or Coroutine[Callable[..., Awaitable[None]]]:
+        """request: httpx.Request
+        To be used to await for the http request.
+        """
         self.__response = await self.__request
         return self.__response
 
     @property
     def response(self):
+        """response: httpx.Response"""
         return self.__response
 
     @property
     def consumer(self) -> Callable:
+        """consumer: Callable"""
         return self.__consumer
 
 
-class ConsumerResponse:
+class ScrapeResponse:
+    """ConsumerResponse class
+    Wrapper for the scraping responses.
+    """
     __metadata: dict
     __data: any
-    __further_requests: list[Request] or None
+    __further_requests: list[ScrapeRequest] or None
 
-    def __init__(self, metadata: dict, data: any, further_requests: list[Request] = None) -> None:
+    def __init__(self, metadata: dict, data: any, further_requests: list[ScrapeRequest] = None) -> None:
         self.__metadata = metadata.copy()
         self.__data = data
         self.__further_requests = further_requests
 
     @property
     def metadata(self) -> dict:
+        """metadata: dict"""
         return self.__metadata
 
     @property
     def data(self) -> any:
+        """data: any
+        The scraped data.
+        """
         return self.__data
 
     @property
-    def further_requests(self):
+    def further_requests(self) -> list[ScrapeRequest]:
+        """further_requests: list[ScrapeRequest]
+        List of requests to further scrape, if any were generated during the scraping process.
+        """
         return self.__further_requests
 
 
-async def request_producer(client: AsyncClient, queue: asyncio.Queue, requests: list[dict[str, any]]):
+async def scrape_request_producer(
+        client: AsyncClient,
+        queue: asyncio.Queue,
+        requests: list[dict[str, any]]
+) -> None:
+    """Initial Scraping Request producer
+
+    Generates ScrapeRequest instances foreach HTTP request in the 'requests' list.
+
+    :param client: AsyncClient  HTTP Client for managing HTTP requests
+    :param queue: asyncio.Queue Scrape Request queue
+    :param requests: list[dict[str, any]]   List of requests to generate
+    """
     while len(requests) > 0:
         r = requests.pop()
         url = r['url'] + r['metadata']['url_append'] if 'url_append' in r['metadata'].keys() else r['url']
         await queue.put(
-            Request(
+            ScrapeRequest(
                 metadata=r['metadata'],
                 request=client.request(method=r['method'], url=url),
                 consumer=r['consumer']
@@ -78,17 +109,25 @@ async def request_producer(client: AsyncClient, queue: asyncio.Queue, requests: 
         )
 
 
-async def request_consumer(
+async def scrape_request_consumer(
         client: AsyncClient,
         queue: asyncio.Queue,
         response_queue: asyncio.Queue
-):
+) -> None:
+    """Scraping Request consumer
+
+    Processes and handles requests through the scraping process.
+
+    :param client: AsyncClient  HTTP Client for managing HTTP requests
+    :param queue: asyncio.Queue Scrape Request queue
+    :param response_queue: asyncio.Queue    Scrape Response queue
+    """
     async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         while True:
             __queue_item = await queue.get()
 
             # Verify queue item is a compatible Request, remove if not
-            if type(__queue_item) is not Request:
+            if type(__queue_item) is not ScrapeRequest:
                 # TODO: must log 'Queue items must be of type Request'
                 queue.task_done()
                 continue
@@ -102,7 +141,7 @@ async def request_consumer(
                     url += __queue_item.metadata['url_append']
                 __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
                 await queue.put(
-                    Request(
+                    ScrapeRequest(
                         metadata=__queue_item.metadata,
                         request=client.request(method=__queue_item.response.request.method, url=url),
                         consumer=__queue_item.consumer

@@ -2,12 +2,17 @@ import asyncio
 
 from httpx import AsyncClient
 
-from src.data_crawler.requests import request_producer, request_consumer
+from src.data_crawler.requests import scrape_request_producer, scrape_request_consumer
 from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 from src.data_crawler.constants import DATA_SRC_URLS, HTTP_CLIENT_CONFIG, ASYNC_AWAIT_TIMEOUT
 
 
 async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, str]:
+    """Function to scrape stocks table from HL Stocks Table page
+
+    :param url: HL Stocks Table URL
+    :param n_pages: Number of pages to scrape from HL Stocks Table page
+    """
     __stocks = {}
     try:
         client = AsyncClient(**HTTP_CLIENT_CONFIG)
@@ -22,7 +27,11 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
         raise e
 
 
-async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
+async def scrape_hl_index_stock_pages(stocks: dict[str, str]) -> None:
+    """Function to scrape stocks pages from HL
+
+    :param stocks: dict containing stocks urls from stocks table
+    """
     async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         queue = asyncio.Queue()
         responses = asyncio.Queue()
@@ -40,9 +49,9 @@ async def scrape_hl_index_stock_pages(stocks: dict[str, str]):
             for url in stocks.values()
         ]
 
-        producers = [asyncio.create_task(request_producer(client, queue, requests)) for _ in range(3)]
+        producers = [asyncio.create_task(scrape_request_producer(client, queue, requests)) for _ in range(3)]
         consumers = [
-            asyncio.create_task(request_consumer(client, queue, responses))
+            asyncio.create_task(scrape_request_consumer(client, queue, responses))
             for _ in range(10)
         ]
 

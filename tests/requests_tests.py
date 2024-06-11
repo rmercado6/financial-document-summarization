@@ -5,7 +5,7 @@ from unittest import mock
 import httpx
 from httpx import AsyncClient
 
-from src.data_crawler.requests import Request, request_consumer, request_producer, ConsumerResponse
+from src.data_crawler.requests import ScrapeRequest, ScrapeResponse, scrape_request_consumer, scrape_request_producer
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
 
 
@@ -20,20 +20,20 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
             },
             'method': 'GET',
             'url': 'ttps://www.hl.co.uk/shares/shares-search-results/B6VTTK0',
-            'consumer': lambda x: ConsumerResponse({}, '', [])
+            'consumer': lambda x: ScrapeResponse({}, '', [])
         }
         self.requests = [self.sample_request]
 
     async def test_request_producer(self):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
-            producers = [asyncio.create_task(request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
+            producers = [asyncio.create_task(scrape_request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
             await asyncio.gather(*producers)
 
             self.assertEqual(1, self.queue.qsize())
 
             item = await self.queue.get()
 
-            self.assertEqual(Request, type(item))
+            self.assertEqual(ScrapeRequest, type(item))
             self.assertEqual(self.sample_request['metadata'], item.metadata)
 
             await item.request
@@ -58,12 +58,12 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             'method': 'GET',
             'url': 'https://www.hl.co.uk/shares/shares-search-results/B6VTTK0/financial-statements-and-reports'
         }
-        self.sample_request = Request(
+        self.sample_request = ScrapeRequest(
             metadata={
                 'url_append': '/financial-statements-and-reports'
             },
             request=self.client.request(**self.request_params),
-            consumer=lambda x, client: ConsumerResponse({}, '', [])
+            consumer=lambda x, client: ScrapeResponse({}, '', [])
         )
 
     async def test_request_consumer(self):
@@ -71,7 +71,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
                 for _ in range(10)
             ]
 
@@ -85,7 +85,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             item = await self.responses.get()
             self.responses.task_done()
 
-            self.assertTrue(type(item) is ConsumerResponse)
+            self.assertTrue(type(item) is ScrapeResponse)
             self.assertEqual({}, item.metadata)
             self.assertEqual('', item.data)
             self.assertEqual([], item.further_requests)
@@ -110,12 +110,12 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             httpx.Response(status_code=301, headers={'Location': '/foo'}, request=httpx.Request(**self.request_params)),
             httpx.Response(status_code=200, content='sample content'),
         ]
-        self.sample_request = Request(
+        self.sample_request = ScrapeRequest(
             metadata={
                 'url_append': '/financial-statements-and-reports'
             },
             request=request,
-            consumer=lambda x, client: ConsumerResponse({}, '', [])
+            consumer=lambda x, client: ScrapeResponse({}, '', [])
         )
 
     async def test_request_consumer_with_redirect(self):
@@ -123,7 +123,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
                 for _ in range(10)
             ]
 
@@ -154,7 +154,7 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
                 for _ in range(10)
             ]
 

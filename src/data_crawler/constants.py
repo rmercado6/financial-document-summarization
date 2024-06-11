@@ -1,14 +1,17 @@
 import httpx
 
 
+# Number of pages to scrape from HL stocks table
 N_PAGES = 6
 
+# dictionary of urls to scrape
 DATA_SRC_URLS = {
     'hl-base': 'https://www.hl.co.uk',
     'hl-ftse-all-share-index': '/shares/stock-market-summary/ftse-all-share',
     'hl-financial-statement-and-reports': '/financial-statements-and-reports'
 }
 
+# HTTP Client configuration
 HTTP_CLIENT_CONFIG = {
     "limits": httpx.Limits(max_connections=10),
     "timeout": httpx.Timeout(60.0),
@@ -20,4 +23,5 @@ HTTP_CLIENT_CONFIG = {
     "follow_redirects": True,
 }
 
+# Async await Timeout limit
 ASYNC_AWAIT_TIMEOUT = 60
