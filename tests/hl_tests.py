@@ -16,14 +16,13 @@ with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 
     financial_statements_page_mock_response = ''.join([line for line in f.readlines()])
 
 
-class HlParseStockTableTests(TestCase):
+class HlParseTests(TestCase):
 
     def setUp(self):
         self.financial_statements_page_mock_request: Request = MagicMock(Request, metadata={})
         self.financial_statements_page_mock_request.response.text = financial_statements_page_mock_response
         self.financial_statements_page_mock_request.response.request.url = 'http://test.url'
-        self.mock_client = MagicMock(httpx.AsyncClient)
-        self.mock_client.request.return_value = httpx.Response(status_code=200)
+        self.mock_client = MagicMock()
 
     def test_parse_stocks_table(self) -> None:
         stocks: dict[str, str] = parse_stocks_table(stocks_table_mock_response)

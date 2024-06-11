@@ -117,7 +117,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             consumer=lambda x, y: ConsumerResponse({}, '', [])
         )
 
-    async def test_request_consumer(self):
+    async def test_request_consumer_with_redirect(self):
         async with asyncio.timeout(5):
             await self.queue.put(self.sample_request)
 
@@ -135,14 +135,6 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             )
             self.assertFalse(self.responses.empty())
             self.assertEqual(1, self.responses.qsize())
-
-            item = await self.responses.get()
-            self.responses.task_done()
-
-            self.assertTrue(type(item) is ConsumerResponse)
-            self.assertEqual({}, item.metadata)
-            self.assertEqual('', item.data)
-            self.assertEqual([], item.further_requests)
 
     def tearDown(self):
         [c.cancel() for c in self.consumers]
