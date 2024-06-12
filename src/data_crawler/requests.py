@@ -1,10 +1,15 @@
 import asyncio
+import logging
+
 import httpx
 
 from typing import Callable, Coroutine, Awaitable, Any
 from httpx import AsyncClient
 
-from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGER_NAME
+
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class ScrapeRequest:
@@ -99,6 +104,7 @@ async def scrape_request_producer(
     while len(requests) > 0:
         r = requests.pop()
         url = r['url'] + r['metadata']['url_append'] if 'url_append' in r['metadata'].keys() else r['url']
+        logger.debug('Producing %s request: %s', r['method'], r['url'])
         await queue.put(
             ScrapeRequest(
                 metadata=r['metadata'],
@@ -124,28 +130,38 @@ async def scrape_request_consumer(
     async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         while True:
             __queue_item = await queue.get()
+            logger.debug('Got request from queue: %s', __queue_item)
 
             # Verify queue item is a compatible Request, remove if not
             if type(__queue_item) is not ScrapeRequest:
-                # TODO: must log 'Queue items must be of type Request'
+                logger.warning(f'Bad request from queue. {type(__queue_item)} object is not a ScrapeRequest object.')
                 queue.task_done()
                 continue
 
             await __queue_item.request
 
+            logger.info('Processing Scrape Request %s', __queue_item.response.request.url)
+
             # Process redirected responses
             if __queue_item.response.is_redirect:
-                url = httpx.URL(__queue_item.response.headers['location'])
+                logger.debug(f'Redirecting request {__queue_item.response.request.url} to {__queue_item.response.headers["Location"]}')
+
+                # Build new URL
+                url = httpx.URL(__queue_item.response.headers['Location'])
                 if not url.host:
                     url = httpx.URL(
-                        __queue_item.response.headers['location'],
+                        __queue_item.response.headers['Location'],
                         host=__queue_item.response.request.url.host,
                         scheme=__queue_item.response.request.url.scheme
                     )
                 url = str(url)
                 if 'url_append' in __queue_item.metadata.keys():
                     url += __queue_item.metadata['url_append']
+
+                # Update metadata with redirect tracking information
                 __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
+
+                # Add new request to queue
                 await queue.put(
                     ScrapeRequest(
                         metadata=__queue_item.metadata,
@@ -156,7 +172,10 @@ async def scrape_request_consumer(
 
             # Process successful requests
             elif __queue_item.response.is_success:
+                logger.debug(f'Successful request from queue: {__queue_item.response.request.url}. '
+                             f'Sending request to consumer function {__queue_item.consumer.__name__}.')
                 response: ScrapeResponse = __queue_item.consumer(__queue_item, client=client)
+                logger.debug(f'Got response from consumer function.')
                 await response_queue.put(response)
                 if response.further_requests:
                     [await queue.put(request) for request in response.further_requests]

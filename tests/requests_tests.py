@@ -1,17 +1,23 @@
 import unittest
 import asyncio
-from unittest import mock
-
+import logging
 import httpx
+
+from unittest import mock
 from httpx import AsyncClient
 
 from src.data_crawler.requests import ScrapeRequest, ScrapeResponse, scrape_request_consumer, scrape_request_producer
-from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
+
+# Set up Logger
+logging.basicConfig(**LOGGING_CONFIG['testing'])
+logger = logging.getLogger('Requests Tests')
 
 
 class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
         self.sample_request = {
@@ -44,20 +50,27 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
             )
             self.queue.task_done()
 
+    def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
+
 
 class ConsumerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
         self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
-        self.client.request = mock.AsyncMock(return_value=httpx.Response(
-            status_code=200, content='sample content'
-        ))
+
         self.request_params = {
             'method': 'GET',
             'url': 'https://www.hl.co.uk/shares/shares-search-results/B6VTTK0/financial-statements-and-reports'
         }
+
+        self.client.request = mock.AsyncMock(return_value=httpx.Response(
+            status_code=200, content='sample content', request=httpx.Request(**self.request_params)
+        ))
+
         self.sample_request = ScrapeRequest(
             metadata={
                 'url_append': '/financial-statements-and-reports'
@@ -91,12 +104,14 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([], item.further_requests)
 
     def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
 
 
 class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
         self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
@@ -108,7 +123,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
         request = self.client.request(**self.request_params)
         self.client.request.side_effect = [
             httpx.Response(status_code=301, headers={'Location': '/foo'}, request=httpx.Request(**self.request_params)),
-            httpx.Response(status_code=200, content='sample content'),
+            httpx.Response(status_code=200, content='sample content', request=httpx.Request(**self.request_params)),
         ]
         self.sample_request = ScrapeRequest(
             metadata={
@@ -128,6 +143,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             ]
 
             await self.queue.join()
+            [c.cancel() for c in self.consumers]
 
             self.assertEqual(2, self.client.request.await_count)
             self.client.request.assert_awaited_with(
@@ -138,12 +154,14 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(1, self.responses.qsize())
 
     def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
 
 
 class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
         self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
@@ -164,6 +182,7 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(self.responses.empty())
 
     def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
 
 

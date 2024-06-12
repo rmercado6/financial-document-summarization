@@ -1,4 +1,5 @@
 import httpx
+from logging import INFO, DEBUG
 
 
 # Number of pages to scrape from HL stocks table
@@ -25,3 +26,18 @@ HTTP_CLIENT_CONFIG = {
 
 # Async await Timeout limit
 ASYNC_AWAIT_TIMEOUT = 60
+
+LOGGER_NAME = 'data-crawler'
+
+LOGGING_CONFIG = {
+    'prod': {
+        'format': '{asctime} - [{levelname:.3}]: {name:>12.12} | {filename:>15.15} [{lineno:4}] | {message}',
+        'style': '{',
+        'level': INFO
+    },
+    'testing': {
+        'format': '{asctime} - [{levelname:.3}]: {name:>12.12} | {filename:>15.15} [{lineno:4}] | {message}',
+        'style': '{',
+        'level': DEBUG
+    }
+}
