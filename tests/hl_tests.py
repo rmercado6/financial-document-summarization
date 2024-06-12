@@ -76,7 +76,7 @@ class HlParseTests(TestCase):
         )
         self.assertTrue(type(response) is ScrapeResponse)
         self.assertTrue(type(response.metadata) is dict)
-        self.assertTrue(type(response.data) is str)
+        self.assertTrue(type(response.data) is bytes)
         self.assertTrue(type(response.further_requests) is list)
         self.assertGreaterEqual(len(response.metadata.keys()), 4)
 
@@ -105,7 +105,7 @@ class HlParseTests(TestCase):
             self.financial_reports_pdf_request_mock
         )
         self.assertTrue(type(response) is ScrapeResponse)
-        self.assertTrue(type(response.data) is str)
+        self.assertTrue(type(response.data) is bytes)
         self.assertIsNone(response.further_requests)
         self.assertTrue(type(response.metadata) is dict)
         self.assertTrue('src' in response.metadata.keys())

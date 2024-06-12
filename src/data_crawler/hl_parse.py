@@ -45,8 +45,8 @@ def parse_financial_statements_and_reports(
     ):
         class_list = row.xpath("./@class")[0] if row.xpath("./@class") else []
         cell = 'th' if class_list == 'factsheet-head' else 'td'
-        financial_results_lines.append([re.sub(r'(\n|\t)+', '', x) for x in row.xpath(f"./{cell}/text()")])
-    data = '\n'.join(['\t'.join(_) for _ in financial_results_lines])
+        financial_results_lines.append([re.sub(r'(\n|\t|\r)+', '', x) for x in row.xpath(f"./{cell}/text()")])
+    data = '\n'.join(['\t'.join(_) for _ in financial_results_lines]).encode()
 
     # Gather share information
     share = {
@@ -104,6 +104,8 @@ def parse_financial_reports_pdf_file(request: ScrapeRequest, client: AsyncClient
     pdf_reader = pypdf.PdfReader(byte_stream)
     for page in pdf_reader.pages:
         data += page.extract_text()
+
+    data = data.encode()
 
     return ScrapeResponse(
         metadata={

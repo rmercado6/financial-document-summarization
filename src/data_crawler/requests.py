@@ -1,8 +1,7 @@
 import asyncio
 import httpx
 
-from typing import Callable, Coroutine, Awaitable
-from inspect import iscoroutinefunction
+from typing import Callable, Coroutine, Awaitable, Any
 from httpx import AsyncClient
 
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT
@@ -46,7 +45,7 @@ class ScrapeRequest:
         return self.__response
 
     @property
-    def consumer(self) -> Callable:
+    def consumer(self) -> Callable[..., Any]:
         """consumer: Callable"""
         return self.__consumer
 
@@ -136,7 +135,14 @@ async def scrape_request_consumer(
 
             # Process redirected responses
             if __queue_item.response.is_redirect:
-                url = __queue_item.response.headers['Location']
+                url = httpx.URL(__queue_item.response.headers['location'])
+                if not url.host:
+                    url = httpx.URL(
+                        __queue_item.response.headers['location'],
+                        host=__queue_item.response.request.url.host,
+                        scheme=__queue_item.response.request.url.scheme
+                    )
+                url = str(url)
                 if 'url_append' in __queue_item.metadata.keys():
                     url += __queue_item.metadata['url_append']
                 __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
@@ -150,10 +156,7 @@ async def scrape_request_consumer(
 
             # Process successful requests
             elif __queue_item.response.is_success:
-                if iscoroutinefunction(__queue_item.consumer):
-                    response = await __queue_item.consumer(__queue_item, client=client)
-                else:
-                    response = __queue_item.consumer(__queue_item, client=client)
+                response: ScrapeResponse = __queue_item.consumer(__queue_item, client=client)
                 await response_queue.put(response)
                 if response.further_requests:
                     [await queue.put(request) for request in response.further_requests]

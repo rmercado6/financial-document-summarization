@@ -132,7 +132,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(2, self.client.request.await_count)
             self.client.request.assert_awaited_with(
                 method='GET',
-                url='/foo/financial-statements-and-reports'
+                url='https://www.hl.co.uk/foo/financial-statements-and-reports'
             )
             self.assertFalse(self.responses.empty())
             self.assertEqual(1, self.responses.qsize())
