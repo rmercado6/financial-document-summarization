@@ -6,7 +6,7 @@ import pypdf
 from io import BytesIO
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from src.data_crawler.constants import LOGGING_CONFIG
+from src.data_crawler.constants import LOGGING_CONFIG, LOGGER_NAME
 from src.data_crawler.ar_scrape import scrape_ar_stocks_table, scrape_ar_stock_pages
 
 
@@ -26,7 +26,7 @@ class ARScrapeStocksTableTest(unittest.TestCase):
             self.stocks_table_response_mock = _.read()
 
     @patch('httpx.Client.get', new_callable=MagicMock)
-    def test_scrape_hl_index_stocks_table(self, async_client_mock: AsyncMock) -> None:
+    def test_scrape_ar_stocks_table(self, async_client_mock: MagicMock) -> None:
         """Test the scraping of the stocks table"""
         # Set up Mocks
         async_client_mock.return_value = httpx.Response(
@@ -54,7 +54,7 @@ class ARScrapeFirmsDetailPageTest(unittest.IsolatedAsyncioTestCase):
         logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
 
         # Load html response mocks from files
-        with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 'r') as _:
+        with open('./tests/mocks/data_crawler/ar-firm-detail-page-abrdn.mock.html', 'r') as _:
             self.firms_detail_page_response_mock = _.read()
 
         # Set mock request
@@ -69,7 +69,7 @@ class ARScrapeFirmsDetailPageTest(unittest.IsolatedAsyncioTestCase):
         self.pdf_response_mock = byte_stream.read()
 
     @patch('httpx.AsyncClient.request', new_callable=AsyncMock)
-    async def test_scrape_hl_index_stock_pages(self, async_client_mock: AsyncMock) -> None:
+    async def test_scrape_ar_firm_detail_page(self, async_client_mock: AsyncMock) -> None:
         """Test the scraping of the stocks' financial statements page"""
         # Set Up Mocks
         async_client_mock.side_effect = [
@@ -92,6 +92,7 @@ class ARScrapeFirmsDetailPageTest(unittest.IsolatedAsyncioTestCase):
         })
 
         # Assert
+        self.assertNoLogs(logging.getLogger('asyncio'), logging.ERROR)
         self.assertEqual(11, async_client_mock.await_count)
 
     def tearDown(self):
