@@ -35,7 +35,7 @@ async def scrape_ar_stock_pages(stocks: dict[str, str]) -> None:
 
     :param stocks: dict containing stocks urls from stocks table
     """
-    logger.debug(f'Starting HL stock pages scraping for {len(stocks.keys())} stocks.')
+    logger.debug(f'Starting AR stock pages scraping for {len(stocks.keys())} stocks.')
     async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
         queue = asyncio.Queue()  # Queue for ScrapeRequest objects
         responses = asyncio.Queue()  # Queue for ScrapeResponse objects

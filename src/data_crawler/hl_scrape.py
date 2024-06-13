@@ -17,7 +17,7 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
     :param url: HL Stocks Table URL
     :param n_pages: Number of pages to scrape from HL Stocks Table page
     """
-    logger.debug(f'Scraping HL Index stocks table from {url}')
+    logger.debug(f'Scraping HL stocks table from {url}')
     __stocks = {}
     try:
         client = AsyncClient(**HTTP_CLIENT_CONFIG)
@@ -27,10 +27,10 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> dict[str, 
             if response.status_code == 200:
                 data = parse_stocks_table(response.text)
                 __stocks.update(data)
-        logger.debug(f'Finished scraping HL Index stocks table.')
+        logger.debug(f'Finished scraping HL stocks table.')
         return __stocks
     except Exception as e:
-        logger.error(f'Error scraping the HL Index stocks table. {e}')
+        logger.error(f'Error scraping the HL stocks table from {url}.\n\t{e}')
         raise e
 
 
