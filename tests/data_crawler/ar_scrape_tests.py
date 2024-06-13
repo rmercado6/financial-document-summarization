@@ -22,7 +22,7 @@ class ARScrapeStocksTableTest(unittest.TestCase):
         logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
 
         # Load html response mocks from files
-        with open('./tests/mocks/data_crawler/hl-stocks-table.mock.html', 'r') as _:
+        with open('./tests/mocks/data_crawler/ar-stocks-table.mock.html', 'r') as _:
             self.stocks_table_response_mock = _.read()
 
     @patch('httpx.Client.get', new_callable=MagicMock)

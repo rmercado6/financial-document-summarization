@@ -19,7 +19,7 @@ def scrape_ar_stocks_table(url: str) -> dict[str, str]:
     try:
         client = Client(**HTTP_CLIENT_CONFIG)
         response = client.get(url)
-        if response.status_code == 200:
+        if response.is_success:
             __stocks = parse_stocks_table(response.text)
         logger.debug('Finished scraping AR stocks table')
         return __stocks
