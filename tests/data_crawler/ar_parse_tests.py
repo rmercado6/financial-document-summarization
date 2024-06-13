@@ -2,6 +2,7 @@ import unittest
 import logging
 
 from unittest.mock import MagicMock
+from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGING_CONFIG
 from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
@@ -35,7 +36,7 @@ class ARParseTests(unittest.TestCase):
         self.financial_statements_page_request_mock.response.request.url = 'http://test.url'
 
         # HTTP Client Mock
-        self.http_client_mock = MagicMock()
+        self.http_client_mock = MagicMock(AsyncClient)
 
     def test_parse_stocks_table(self) -> None:
         """Test the parsing of the stocks table HTML"""
@@ -50,7 +51,8 @@ class ARParseTests(unittest.TestCase):
             self.financial_statements_page_request_mock,
             client=self.http_client_mock
         )
-        self.http_client_mock.assert_called_once()
+        self.http_client_mock.request.assert_called()
+        self.assertTrue(10, self.http_client_mock.request.call_count)
         self.assertTrue(type(response) is ScrapeResponse)
         self.assertTrue(len(response.further_requests) == 10)
         [self.assertTrue(type(r) is ScrapeRequest) for r in response.further_requests]

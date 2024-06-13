@@ -5,6 +5,7 @@ from lxml import etree
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.hl_parse import parse_financial_reports_pdf_file
 
 
 logger = getLogger(LOGGER_NAME)
@@ -41,6 +42,49 @@ def parse_firms_detail_page(
     :param client: Httpx AsyncClient HTTP Client to manage HTTP requests.
     :return: None
     """
-    requests = []   # Add the request for each of teh files to download
-    return ScrapeResponse({}, None, requests)
+    logger.debug(f'Starting AR\'s firms detail parsing for {request.response.request.url}...')
+
+    parser = etree.HTMLParser()
+    selector = etree.fromstring(request.response.text, parser)
+
+    # Gather share information
+    share = {
+        'title': selector.xpath("//div[@class='vendor_name']/h1/span/@text"),
+        'ticker': selector.xpath("//span[@class='ticker_name']/@content"),
+    }
+
+    logger.debug(f'Gathered stock metadata from {request.response.request.url}.')
+
+    # Gather annual and interim reports download urls & Build new requests
+    requests = []
+    for div in selector.xpath("//div[@class='archived_report_content_block']/ul/li/div"):
+        m = request.metadata.copy()
+        m.update({
+            'data_type': 'annual_report',
+            'year': div.xpath("./span[@class='heading']/@text"),
+            'url_append': '',
+            'share': share
+        })
+        requests.append(
+            ScrapeRequest(
+                metadata=m,
+                request=client.request(method="GET", url=div.xpath("/span[@class='btn_archived download']/a/@href")),
+                consumer=parse_financial_reports_pdf_file
+            )
+        )
+    logger.debug(f'Built requests for annual and interim reports download urls for {request.response.request.url}.')
+
+    # Build response metadata
+    m = request.metadata.copy()
+    m.update({
+        'src': request.response.request.url,
+        'data_type': 'None',
+        'url_append': '',
+        'share': share
+    })
+
+    logger.info(f'Scraped {share["ticker"]}\'s AR detail page.')
+
+    # return data
+    return ScrapeResponse(m, None, requests)
 
