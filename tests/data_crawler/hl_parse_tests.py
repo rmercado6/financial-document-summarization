@@ -54,9 +54,7 @@ class HlParseFinancialStatementsAndReportsTestCase(unittest.TestCase):
         # Assert the inclusion of the scraped share information
         self.assertTrue('share' in response.metadata.keys())
         self.assertTrue('title' in response.metadata['share'].keys())
-        self.assertTrue('description' in response.metadata['share'].keys())
-        self.assertTrue('sedol' in response.metadata['share'].keys())
-        self.assertTrue('epic' in response.metadata['share'].keys())
+        self.assertTrue('ticker' in response.metadata['share'].keys())
         self.assertTrue('identifier' in response.metadata['share'].keys())
 
         # Assert the extraction of PDF report urls

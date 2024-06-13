@@ -24,7 +24,7 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
     pdf_reader = pypdf.PdfReader(byte_stream)
 
     try:
-        logger.debug(f'Starting {request.metadata["share"]["epic"]}\'s HL financial reports PDF file '
+        logger.debug(f'Starting {request.metadata["share"]["ticker"]}\'s HL financial reports PDF file '
                      f'\'{request.metadata["data_type"]}\' download process...')
 
         for page in pdf_reader.pages:
@@ -38,7 +38,7 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
             'share': request.metadata['share']
         }
 
-        logger.info(f'Scraped {request.metadata["share"]["epic"]}\'s HL financial reports from PDF file '
+        logger.info(f'Scraped {request.metadata["share"]["ticker"]}\'s HL financial reports from PDF file '
                     f'\'{request.metadata["data_type"]}\'.')
 
     except Exception as e:

@@ -51,6 +51,7 @@ def parse_firms_detail_page(
     share = {
         'title': selector.xpath("//div[@class='left_section']/div[@class='vendor_name']/h1/text()")[0],
         'ticker': selector.xpath("//span[@class='ticker_name']/text()")[0],
+        'identifier': selector.xpath("//span[@class='ticker_name']/text()")[0],
     }
 
     logger.debug(f'Gathered stock metadata from {request.response.request.url}.')

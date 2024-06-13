@@ -64,11 +64,8 @@ def parse_financial_statements_and_reports(
     # Gather share information
     share = {
         'title': selector.xpath("//head/meta[@name='Share_Title']/@content")[0],
-        'description': selector.xpath("//head/meta[@name='Share_Description']/@content")[0],
-        'sedol': selector.xpath("//head/meta[@name='Share_Sedol']/@content")[0],
-        'epic': selector.xpath("//head/meta[@name='Share_EPIC']/@content")[0],
+        'ticker': selector.xpath("//head/meta[@name='Share_EPIC']/@content")[0],
         'identifier': selector.xpath("//head/meta[@name='Share_Identifier']/@content")[0],
-        'tradeable': selector.xpath("//head/meta[@name='Share_Tradeable']/@content")[0],
     }
 
     logger.debug(f'Gathered stock metadata from {request.response.request.url}.')
@@ -104,7 +101,7 @@ def parse_financial_statements_and_reports(
         'share': share
     })
 
-    logger.info(f'Scraped {share["epic"]}\'s financial statement and reports table.')
+    logger.info(f'Scraped {share["ticker"]}\'s financial statement and reports table.')
 
     # return data
     return ScrapeResponse(m, data, requests)

@@ -30,11 +30,8 @@ class PdfParseTestCase(unittest.TestCase):
                 'data_type': 'annual_report',
                 'share': {
                     'title': 'Abrdn plc',
-                    'description': 'abrdn',
-                    'sedol': '123456',
-                    'epic': 'ABRDN',
+                    'ticker': 'ABRDN',
                     'identifier': 'ABRDN',
-                    'tradeable': 'yes',
                 }
             }
         )
