@@ -5,7 +5,7 @@ from lxml import etree
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.hl_parse import parse_financial_reports_pdf_file
+from src.data_crawler.pdf_parse import parse_pdf_file
 
 
 logger = getLogger(LOGGER_NAME)
@@ -69,7 +69,7 @@ def parse_firms_detail_page(
             ScrapeRequest(
                 metadata=m,
                 request=client.request(method="GET", url=div.xpath("/span[@class='btn_archived download']/a/@href")),
-                consumer=parse_financial_reports_pdf_file
+                consumer=parse_pdf_file
             )
         )
     logger.debug(f'Built requests for annual and interim reports download urls for {request.response.request.url}.')
