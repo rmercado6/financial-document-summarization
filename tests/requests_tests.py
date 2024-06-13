@@ -1,16 +1,23 @@
 import unittest
 import asyncio
-from unittest import mock
-
+import logging
 import httpx
+
+from unittest import mock
 from httpx import AsyncClient
 
-from src.data_crawler.requests import request_consumer, request_producer
+from src.data_crawler.requests import ScrapeRequest, ScrapeResponse, scrape_request_consumer, scrape_request_producer
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
+
+# Set up Logger
+logging.basicConfig(**LOGGING_CONFIG['testing'])
+logger = logging.getLogger('Requests Tests')
 
 
 class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
         self.sample_request = {
@@ -18,71 +25,95 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             'method': 'GET',
-            'url': 'ttps://www.hl.co.uk/shares/shares-search-results/B6VTTK0'
+            'url': 'ttps://www.hl.co.uk/shares/shares-search-results/B6VTTK0',
+            'consumer': lambda x: ScrapeResponse({}, '', [])
         }
         self.requests = [self.sample_request]
 
     async def test_request_producer(self):
-        producers = [asyncio.create_task(request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
-        await asyncio.gather(*producers)
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            producers = [asyncio.create_task(scrape_request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
+            await asyncio.gather(*producers)
 
-        self.assertEqual(1, self.queue.qsize())
+            self.assertEqual(1, self.queue.qsize())
 
-        item = await self.queue.get()
+            item = await self.queue.get()
 
-        self.assertEqual(['metadata', 'request'], list(item.keys()))
-        self.assertEqual(self.sample_request['metadata'], item['metadata'])
+            self.assertEqual(ScrapeRequest, type(item))
+            self.assertEqual(self.sample_request['metadata'], item.metadata)
 
-        await item['request']
+            await item.request
 
-        self.client.request.assert_awaited_with(
-            method=self.sample_request['method'],
-            url=self.sample_request['url'] + self.sample_request['metadata']['url_append']
-        )
-        self.queue.task_done()
+            self.client.request.assert_awaited_with(
+                method=self.sample_request['method'],
+                url=self.sample_request['url'] + self.sample_request['metadata']['url_append']
+            )
+            self.queue.task_done()
+
+    def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
 
 
 class ConsumerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
-        self.client.request = mock.AsyncMock(return_value=httpx.Response(
-            status_code=200, content='sample content'
-        ))
+
         self.request_params = {
             'method': 'GET',
             'url': 'https://www.hl.co.uk/shares/shares-search-results/B6VTTK0/financial-statements-and-reports'
         }
-        self.sample_request = {
-            'metadata': {
+
+        self.client.request = mock.AsyncMock(return_value=httpx.Response(
+            status_code=200, content='sample content', request=httpx.Request(**self.request_params)
+        ))
+
+        self.sample_request = ScrapeRequest(
+            metadata={
                 'url_append': '/financial-statements-and-reports'
             },
-            'request': self.client.request(**self.request_params)
-        }
-        self.requests = [self.sample_request]
+            request=self.client.request(**self.request_params),
+            consumer=lambda x, client: ScrapeResponse({}, '', [])
+        )
 
     async def test_request_consumer(self):
-        await self.queue.put(self.sample_request)
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            await self.queue.put(self.sample_request)
 
-        self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
-            for _ in range(10)
-        ]
+            self.consumers = [
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                for _ in range(10)
+            ]
 
-        await self.queue.join()
+            await self.queue.join()
 
-        self.client.request.assert_awaited_once()
-        self.client.request.assert_awaited_with(**self.request_params)
+            self.client.request.assert_awaited_once()
+            self.client.request.assert_awaited_with(**self.request_params)
+            self.assertFalse(self.responses.empty())
+            self.assertEqual(1, self.responses.qsize())
+
+            item = await self.responses.get()
+            self.responses.task_done()
+
+            self.assertTrue(type(item) is ScrapeResponse)
+            self.assertEqual({}, item.metadata)
+            self.assertEqual('', item.data)
+            self.assertEqual([], item.further_requests)
 
     def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
 
 
 class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
         self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
         self.client = mock.AsyncMock(AsyncClient)
         self.client.request = mock.AsyncMock()
         self.request_params = {
@@ -92,34 +123,68 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
         request = self.client.request(**self.request_params)
         self.client.request.side_effect = [
             httpx.Response(status_code=301, headers={'Location': '/foo'}, request=httpx.Request(**self.request_params)),
-            httpx.Response(status_code=200, content='sample content'),
+            httpx.Response(status_code=200, content='sample content', request=httpx.Request(**self.request_params)),
         ]
-        self.sample_request = {
-            'metadata': {
+        self.sample_request = ScrapeRequest(
+            metadata={
                 'url_append': '/financial-statements-and-reports'
             },
-            'request': request
-        }
-        self.requests = [self.sample_request]
-
-    async def test_request_consumer(self):
-        await self.queue.put(self.sample_request)
-
-        self.consumers = [
-            asyncio.create_task(request_consumer(self.client, self.queue, lambda x: True))
-            for _ in range(10)
-        ]
-
-        await self.queue.join()
-
-        self.assertEqual(2, self.client.request.await_count)
-        self.client.request.assert_awaited_with(
-            method='GET',
-            url='/foo/financial-statements-and-reports'
+            request=request,
+            consumer=lambda x, client: ScrapeResponse({}, '', [])
         )
 
+    async def test_request_consumer_with_redirect(self):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            await self.queue.put(self.sample_request)
+
+            self.consumers = [
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                for _ in range(10)
+            ]
+
+            await self.queue.join()
+            [c.cancel() for c in self.consumers]
+
+            self.assertEqual(2, self.client.request.await_count)
+            self.client.request.assert_awaited_with(
+                method='GET',
+                url='https://www.hl.co.uk/foo/financial-statements-and-reports'
+            )
+            self.assertFalse(self.responses.empty())
+            self.assertEqual(1, self.responses.qsize())
+
     def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
+
+
+class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
+
+    def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
+        self.queue = asyncio.Queue()
+        self.responses = asyncio.Queue()
+        self.client = mock.AsyncMock(AsyncClient)
+        self.sample_request = {}
+
+    async def test_request_consumer(self):
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            await self.queue.put(self.sample_request)
+
+            self.consumers = [
+                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                for _ in range(10)
+            ]
+
+            await self.queue.join()
+
+            self.client.request.assert_not_awaited()
+            self.assertTrue(self.responses.empty())
+
+    def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
+        [c.cancel() for c in self.consumers]
+
 
 if __name__ == '__main__':
     unittest.main()
