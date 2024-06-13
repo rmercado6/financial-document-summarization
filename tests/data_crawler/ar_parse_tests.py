@@ -10,7 +10,7 @@ from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_pag
 
 # Set up Logger
 logging.basicConfig(**LOGGING_CONFIG['testing'])
-logger = logging.getLogger('HL Tests')
+logger = logging.getLogger('AR Parse Tests')
 
 
 class ARParseTests(unittest.TestCase):
