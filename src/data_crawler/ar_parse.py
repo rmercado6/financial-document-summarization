@@ -27,7 +27,7 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
         href = stock.xpath("./@href")[0]
         data[name] = href
 
-    logger.debug('Finished HL\'s stock table parsing process.')
+    logger.debug('Finished AR\'s stock table parsing process.')
 
     return data
 
@@ -49,8 +49,8 @@ def parse_firms_detail_page(
 
     # Gather share information
     share = {
-        'title': selector.xpath("//div[@class='vendor_name']/h1/span/@text"),
-        'ticker': selector.xpath("//span[@class='ticker_name']/@content"),
+        'title': selector.xpath("//div[@class='left_section']/div[@class='vendor_name']/h1/text()")[0],
+        'ticker': selector.xpath("//span[@class='ticker_name']/text()")[0],
     }
 
     logger.debug(f'Gathered stock metadata from {request.response.request.url}.')
