@@ -6,7 +6,7 @@ import httpx
 from typing import Callable, Coroutine, Awaitable, Any
 from httpx import AsyncClient
 
-from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGER_NAME
+from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGER_NAME, HTTP_CLIENT_CONFIG
 
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -191,3 +191,42 @@ async def scrape_request_consumer(
 
             finally:
                 logger.debug(f'Consumer Idle')
+
+
+async def scrape_request_handler(
+        requests: list[dict[str, any]],
+        client: AsyncClient = AsyncClient(**HTTP_CLIENT_CONFIG),     # Async HTTP Client
+        queue: asyncio.Queue = None,     # Queue for ScrapeRequest objects
+        response_queue: asyncio.Queue = None,  # Queue for ScrapeResponse objects
+) -> None:
+    """Asynchronous ScrapeRequest Handler"""
+    logger.debug('Start scrape request handler.')
+
+    # Init queues if not provided in kwargs
+    if queue is None:
+        queue = asyncio.Queue()
+    if response_queue is None:
+        response_queue = asyncio.Queue()
+
+    # Producer and Consumer generation
+    producers = [  # Build and publish in queue the ScrapeRequest for each stock through producers
+        asyncio.create_task(scrape_request_producer(client, queue, requests))
+        for _ in range(3)
+    ]
+    logger.debug('Generated producers for ScrapeRequest object generation.')
+
+    consumers = [  # Generate consumers to process the ScrapeRequest objects
+        asyncio.create_task(scrape_request_consumer(client, queue, response_queue))
+        for _ in range(10)
+    ]
+    logger.debug('Generated consumers for ScrapeRequest object processing.')
+
+    # Wait for producers and consumers to finish their processes
+    await asyncio.gather(*producers)  # wait for producers to finish
+
+    await queue.join()  # Wait for consumers to finish and stop them
+    [c.cancel() for c in consumers]
+
+    # TODO: Process responses (insert into non relational DB (Mongo) or write in jsonl file.
+    logger.debug('Finished scrape request handler.')
+    return None

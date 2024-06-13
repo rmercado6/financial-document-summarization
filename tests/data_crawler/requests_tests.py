@@ -2,12 +2,16 @@ import unittest
 import asyncio
 import logging
 import httpx
+import pypdf
 
 from unittest import mock
 from httpx import AsyncClient
+from io import BytesIO
 
-from src.data_crawler.requests import ScrapeRequest, ScrapeResponse, scrape_request_consumer, scrape_request_producer
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
+from src.data_crawler.requests import (ScrapeRequest, ScrapeResponse, scrape_request_consumer, scrape_request_producer,
+                                       scrape_request_handler)
+from src.data_crawler.ar_parse import parse_firms_detail_page
 
 # Set up Logger
 logging.basicConfig(**LOGGING_CONFIG['testing'])
@@ -184,6 +188,63 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
         [c.cancel() for c in self.consumers]
+
+
+class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
+    """Test Scrape Request Handler"""
+
+    def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
+
+        # Load html response mocks from files
+        with open('./tests/mocks/data_crawler/ar-firm-detail-page-abrdn.mock.html', 'r') as _:
+            self.firms_detail_page_response_mock = _.read()
+
+        # Set mock request
+        self.request_mock = mock.MagicMock(httpx.Request, method='GET', url='http://test.url')
+
+        # Set pdf response contents
+        writer = pypdf.PdfWriter()
+        writer.add_blank_page(100, 100)
+        byte_stream = BytesIO()
+        writer.write_stream(byte_stream)
+        byte_stream.seek(0)
+        self.pdf_response_mock = byte_stream.read()
+
+    @mock.patch('httpx.AsyncClient.request', new_callable=mock.AsyncMock)
+    async def test_scrape_ar_firm_detail_page(self, async_client_mock: mock.AsyncMock) -> None:
+        """Test the scraping of the stocks' financial statements page"""
+        # Set Up Mocks
+        async_client_mock.side_effect = [
+            httpx.Response(200, content=self.firms_detail_page_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
+            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock)
+        ]
+
+        # Call function
+        await scrape_request_handler([
+            {
+                'metadata': {},
+                'method': 'GET',
+                'url': '',
+                'consumer': parse_firms_detail_page
+            }
+        ])
+
+        # Assert
+        self.assertNoLogs(logging.getLogger('asyncio'), logging.ERROR)
+        self.assertEqual(11, async_client_mock.await_count)
+
+    def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')
 
 
 if __name__ == '__main__':

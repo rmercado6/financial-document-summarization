@@ -3,10 +3,9 @@ import httpx
 import pypdf
 import logging
 
-from io import BytesIO
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table, scrape_hl_index_stock_pages
+from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table
 from src.data_crawler.constants import LOGGING_CONFIG
 
 
@@ -39,52 +38,17 @@ class HlScrapeStocksTableTest(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         async_client_mock.assert_awaited_once_with("?page=1")
-        self.assertEqual(dict, type(r))
-        self.assertEqual(110, len(r.keys()))
-        self.assertTrue('Abrdn plc' in r.keys())
-
-    def tearDown(self):
-        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')
-
-
-class HlScrapeFinancialStatementsPageTest(unittest.IsolatedAsyncioTestCase):
-    """Test the scraping of the financial statements page"""
-
-    def setUp(self):
-        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
-
-        # Set mock request
-        self.request_mock = MagicMock(httpx.Request, method='GET', url='http://test.url')
-
-        # Load html response MOCKS from files
-        with open('./tests/mocks/data_crawler/hl-financial-statements-abrdn.mock.html', 'r') as _:
-            self.financial_statements_page_response_mock = _.read()
-
-        # Set pdf response contents
-        writer = pypdf.PdfWriter()
-        writer.add_blank_page(100, 100)
-        byte_stream = BytesIO()
-        writer.write_stream(byte_stream)
-        byte_stream.seek(0)
-        self.pdf_response_mock = byte_stream.read()
-
-    @patch('httpx.AsyncClient.request', new_callable=AsyncMock)
-    async def test_scrape_hl_index_stock_pages(self, async_client_mock: AsyncMock) -> None:
-        """Test the scraping of the stocks' financial statements page"""
-        # Set Up Mocks
-        async_client_mock.side_effect = [
-            httpx.Response(200, content=self.financial_statements_page_response_mock, request=self.request_mock),
-            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock),
-            httpx.Response(200, content=self.pdf_response_mock, request=self.request_mock)
-        ]
-
-        # Call function
-        await scrape_hl_index_stock_pages({
-            'Abrdn plc': '/shares/shares-search-results/BF8Q6K6',
-        })
-
-        # Assert
-        self.assertEqual(3, async_client_mock.await_count)
+        self.assertEqual(list, type(r))
+        self.assertEqual(110, len(r))
+        item = r[0]
+        self.assertTrue('metadata' in item.keys())
+        self.assertTrue(type(item['metadata']) is dict)
+        self.assertTrue('method' in item.keys())
+        self.assertTrue(type(item['method']) is str)
+        self.assertTrue('url' in item.keys())
+        self.assertTrue(type(item['url']) is str)
+        self.assertTrue('consumer' in item.keys())
+        self.assertTrue(callable(type(item['consumer'])))
 
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')
