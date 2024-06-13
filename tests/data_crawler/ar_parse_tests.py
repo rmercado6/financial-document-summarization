@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from httpx import Client
 
 from src.data_crawler.constants import LOGGING_CONFIG
-from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.Requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_page
 
 

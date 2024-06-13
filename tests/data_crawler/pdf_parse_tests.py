@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from io import BytesIO
 
 from src.data_crawler.constants import LOGGING_CONFIG
-from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.Requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.pdf_parse import parse_pdf_file
 
 

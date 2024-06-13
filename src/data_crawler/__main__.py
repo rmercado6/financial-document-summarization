@@ -5,8 +5,7 @@ from src.data_crawler.logger import safely_start_logger
 from src.data_crawler.constants import DATA_SRC_URLS, N_PAGES, LOGGER_NAME
 from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table
 from src.data_crawler.ar_scrape import scrape_ar_stocks_table
-from src.data_crawler.requests import scrape_request_handler
-
+from src.data_crawler.scrape_requests.Functions import scrape_request_handler
 
 logger: logging.Logger = logging.getLogger(LOGGER_NAME)
 
