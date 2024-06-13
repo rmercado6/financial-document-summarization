@@ -41,8 +41,8 @@ class ARParseTests(unittest.TestCase):
         """Test the parsing of the stocks table HTML"""
         stocks: dict[str, str] = parse_stocks_table(self.stocks_table_response_mock)
         self.assertEqual(dict, type(stocks))
-        self.assertEqual(110, len(stocks.keys()))
-        self.assertEqual('/Company/4imprint-group-plc', stocks['4imprint Group plc'])
+        self.assertEqual(1379, len(stocks.keys()))
+        self.assertEqual('/Company/4imprint-group-plc', stocks['4imprint Group PLC'])
 
     def test_parse_firms_detail_page(self) -> None:
         """Test the parsing of the firms detail page HTML"""

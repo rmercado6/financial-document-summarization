@@ -25,7 +25,7 @@ class ARScrapeStocksTableTest(unittest.TestCase):
         with open('./tests/mocks/data_crawler/hl-stocks-table.mock.html', 'r') as _:
             self.stocks_table_response_mock = _.read()
 
-    @patch('httpx.get', new_callable=MagicMock)
+    @patch('httpx.Client.get', new_callable=MagicMock)
     def test_scrape_hl_index_stocks_table(self, async_client_mock: AsyncMock) -> None:
         """Test the scraping of the stocks table"""
         # Set up Mocks
@@ -40,7 +40,7 @@ class ARScrapeStocksTableTest(unittest.TestCase):
         # Assert
         async_client_mock.assert_called_once()
         self.assertEqual(dict, type(r))
-        self.assertEqual(110, len(r.keys()))
+        self.assertEqual(1379, len(r.keys()))
         self.assertTrue('abrdn' in r.keys())
 
     def tearDown(self):

@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from httpx import AsyncClient
+from lxml import etree
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.requests import ScrapeRequest, ScrapeResponse
@@ -15,7 +16,19 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
     :param response_text: html response text
     :return: dict[str, str] dictionary with the stock name and the url to the stock data page
     """
-    return {}
+    logger.debug('Starting AR\'s stock table parsing process...')
+
+    parser = etree.HTMLParser()
+    selector = etree.fromstring(response_text, parser)
+    data = {}
+    for stock in selector.xpath("//div[@class='apparel_stores_company_list']//span[@class='companyName']/a"):
+        name = stock.xpath("./text()")[0]
+        href = stock.xpath("./@href")[0]
+        data[name] = href
+
+    logger.debug('Finished HL\'s stock table parsing process.')
+
+    return data
 
 
 def parse_firms_detail_page(
