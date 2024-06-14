@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 
 from src.data_crawler.constants import LOGGING_CONFIG
 from src.data_crawler.ar_scrape import scrape_ar_stocks_table
-from src.data_crawler.scrape_requests.Requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
 
 # Set up Logger
 logging.basicConfig(**LOGGING_CONFIG['testing'])

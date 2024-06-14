@@ -9,9 +9,9 @@ from httpx import AsyncClient
 from io import BytesIO
 
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
-from src.data_crawler.scrape_requests.Functions import scrape_request_producer, scrape_request_consumer, \
+from src.data_crawler.scrape_requests.handlers import scrape_request_producer, scrape_request_consumer, \
     scrape_request_handler
-from src.data_crawler.scrape_requests.Requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.ar_parse import parse_firms_detail_page
 
 # Set up Logger

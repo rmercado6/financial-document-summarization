@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, HTTP_CLIENT_CONFIG
-from src.data_crawler.scrape_requests.Requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
 
 
 logger = logging.getLogger(LOGGER_NAME)
