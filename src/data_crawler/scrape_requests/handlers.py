@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import httpx
+import jsonlines
 
+from pathlib import Path
 from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME
@@ -24,6 +26,7 @@ async def scrape_request_producer(
     :param client: AsyncClient  HTTP Client for managing HTTP requests
     :param queue: asyncio.Queue Scrape Request queue
     :param requests: list[dict[str, any]]   List of requests to generate
+    :return: None
     """
     while len(requests) > 0:
         r = requests.pop()
@@ -50,9 +53,10 @@ async def scrape_request_consumer(
     :param client: AsyncClient  HTTP Client for managing HTTP requests
     :param queue: asyncio.Queue Scrape Request queue
     :param response_queue: asyncio.Queue    Scrape Response queue
+    :return: None
     """
     async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
-        logger.debug(f'Starting Consumer')
+        logger.debug(f'Starting Request Consumer')
         while True:
             try:
                 __queue_item = await queue.get()
@@ -114,7 +118,30 @@ async def scrape_request_consumer(
                 logger.exception(e)
 
             finally:
-                logger.debug(f'Consumer Idle')
+                logger.debug(f'Request Consumer Idle')
+
+
+async def scrape_response_consumer(response_queue: asyncio.Queue) -> None:
+    """Scraping Response consumer
+
+    :param response_queue: asyncio.Queue    Scrape Response queue
+    :return: None
+    """
+    async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+        logger.debug(f'Starting Response Consumer')
+        while True:
+            try:
+                __queue_item = await response_queue.get()
+                logger.debug('Got response from queue: %s', __queue_item)
+
+                with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                    _.write(__queue_item.jsonl())
+                response_queue.task_done()
+            except Exception as e:
+                logger.exception(e)
+            finally:
+                logger.debug(f'Response Consumer Idle')
+    pass
 
 
 async def scrape_request_handler(
@@ -123,7 +150,14 @@ async def scrape_request_handler(
         queue: asyncio.Queue = None,     # Queue for ScrapeRequest objects
         response_queue: asyncio.Queue = None,  # Queue for ScrapeResponse objects
 ) -> None:
-    """Asynchronous ScrapeRequest Handler"""
+    """Asynchronous ScrapeRequest Handler
+
+    :param requests: list[dict[str, any]]   List of requests to generate
+    :param client: AsyncClient      HTTP Client for managing HTTP requests
+    :param queue: asyncio.Queue     Scrape Request queue
+    :param response_queue: asyncio.Queue    Scrape Response queue
+    :return: None
+    """
     logger.debug('Start scrape request handler.')
 
     # Init queues if not provided in kwargs
@@ -132,6 +166,8 @@ async def scrape_request_handler(
     if response_queue is None:
         response_queue = asyncio.Queue()
 
+    Path('./out/data-crawler').mkdir(parents=True, exist_ok=True)
+
     # Producer and Consumer generation
     producers = [  # Build and publish in queue the ScrapeRequest for each stock through producers
         asyncio.create_task(scrape_request_producer(client, queue, requests))
@@ -139,8 +175,14 @@ async def scrape_request_handler(
     ]
     logger.debug('Generated producers for ScrapeRequest object generation.')
 
-    consumers = [  # Generate consumers to process the ScrapeRequest objects
+    request_consumers = [  # Generate consumers to process the ScrapeRequest objects
         asyncio.create_task(scrape_request_consumer(client, queue, response_queue))
+        for _ in range(10)
+    ]
+    logger.debug('Generated consumers for ScrapeRequest object processing.')
+
+    response_consumers = [  # Generate consumers to process the ScrapeRequest objects
+        asyncio.create_task(scrape_response_consumer(response_queue))
         for _ in range(10)
     ]
     logger.debug('Generated consumers for ScrapeRequest object processing.')
@@ -149,7 +191,10 @@ async def scrape_request_handler(
     await asyncio.gather(*producers)  # wait for producers to finish
 
     await queue.join()  # Wait for consumers to finish and stop them
-    [c.cancel() for c in consumers]
+    [_.cancel() for _ in request_consumers]
+
+    await response_queue.join()  # Wait for consumers to finish and stop them
+    [_.cancel() for _ in response_consumers]
 
     # TODO: Process responses (insert into non relational DB (Mongo) or write in jsonl file.
     logger.debug('Finished scrape request handler.')

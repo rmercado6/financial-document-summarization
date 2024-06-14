@@ -81,6 +81,7 @@ def parse_financial_statements_and_reports(
                 ''.join(a.xpath('.//text()'))
             ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
             'url_append': '',
+            'year': '2023',
             'share': share
         })
         requests.append(

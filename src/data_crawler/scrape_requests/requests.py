@@ -77,3 +77,12 @@ class ScrapeResponse:
         List of requests to further scrape, if any were generated during the scraping process.
         """
         return self.__further_requests
+
+    def jsonl(self) -> dict:
+        return {
+            'title': self.metadata['share']['title'],
+            'ticker': self.metadata['share']['ticker'],
+            # 'year': self.metadata['year'],
+            'document_type': self.metadata['data_type'],
+            'doc': str(self.data)
+        }
