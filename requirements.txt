@@ -1,5 +1,6 @@
 anyio==4.4.0
 asyncmock==0.4.2
+attrs==23.2.0
 certifi==2024.6.2
 cffi==1.16.0
 cryptography==42.0.8
@@ -8,6 +9,7 @@ httpcore==1.0.5
 httpx==0.27.0
 idna==3.7
 iniconfig==2.0.0
+jsonlines==4.0.0
 lxml==5.2.2
 mock==5.1.0
 packaging==24.0
