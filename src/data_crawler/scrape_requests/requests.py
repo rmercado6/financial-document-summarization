@@ -51,10 +51,10 @@ class ScrapeResponse:
     Wrapper for the scraping responses.
     """
     __metadata: dict
-    __data: any
+    __data: str or bytes
     __further_requests: list[ScrapeRequest] or None
 
-    def __init__(self, metadata: dict, data: any, further_requests: list[ScrapeRequest] = None) -> None:
+    def __init__(self, metadata: dict, data: str or bytes, further_requests: list[ScrapeRequest] = None) -> None:
         self.__metadata = metadata.copy()
         self.__data = data
         self.__further_requests = further_requests
@@ -65,7 +65,7 @@ class ScrapeResponse:
         return self.__metadata
 
     @property
-    def data(self) -> any:
+    def data(self) -> str or bytes:
         """data: any
         The scraped data.
         """
@@ -82,7 +82,7 @@ class ScrapeResponse:
         return {
             'title': self.metadata['share']['title'],
             'ticker': self.metadata['share']['ticker'],
-            # 'year': self.metadata['year'],
+            'year': self.metadata['year'] if 'year' in self.metadata.keys() else None,
             'document_type': self.metadata['data_type'],
-            'doc': str(self.data)
+            'doc': self.data if type(self.data) is str else self.data.decode('utf-8'),
         }

@@ -1,7 +1,5 @@
-import asyncio
-
 from logging import getLogger
-from httpx import Client, AsyncClient
+from httpx import Client
 
 from src.data_crawler.constants import LOGGER_NAME, HTTP_CLIENT_CONFIG, DATA_SRC_URLS
 from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_page
@@ -27,7 +25,7 @@ def scrape_ar_stocks_table(url: str) -> list[dict[str, any]]:
             {
                 'metadata': {},
                 'method': 'GET',
-                'url': DATA_SRC_URLS['hl-base'] + url,
+                'url': DATA_SRC_URLS['ar-base'] + url,
                 'consumer': parse_firms_detail_page
             }
             for url in __stocks.values()

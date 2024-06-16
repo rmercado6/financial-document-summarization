@@ -3,6 +3,7 @@ import re
 
 from httpx import AsyncClient
 from lxml import etree
+from datetime import datetime
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
@@ -81,7 +82,7 @@ def parse_financial_statements_and_reports(
                 ''.join(a.xpath('.//text()'))
             ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
             'url_append': '',
-            'year': '2023',
+            'year': datetime.now().year - 1,
             'share': share
         })
         requests.append(
@@ -99,7 +100,8 @@ def parse_financial_statements_and_reports(
         'src': request.response.request.url,
         'data_type': 'financial_results',
         'url_append': '',
-        'share': share
+        'share': share,
+        'year': f'{datetime.now().year - 5}-{datetime.now().year - 1}',
     })
 
     logger.info(f'Scraped {share["ticker"]}\'s financial statement and reports table.')

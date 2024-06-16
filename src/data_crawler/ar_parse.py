@@ -3,7 +3,7 @@ from logging import getLogger
 from httpx import AsyncClient
 from lxml import etree
 
-from src.data_crawler.constants import LOGGER_NAME
+from src.data_crawler.constants import LOGGER_NAME, DATA_SRC_URLS
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.pdf_parse import parse_pdf_file
 
@@ -62,14 +62,17 @@ def parse_firms_detail_page(
         m = request.metadata.copy()
         m.update({
             'data_type': 'annual_report',
-            'year': div.xpath("./span[@class='heading']/@text"),
+            'year': div.xpath("./span[@class='heading']/text()")[0].split(' ')[0],
             'url_append': '',
             'share': share
         })
         requests.append(
             ScrapeRequest(
                 metadata=m,
-                request=client.request(method="GET", url=div.xpath("/span[@class='btn_archived download']/a/@href")),
+                request=client.request(
+                    method="GET",
+                    url=DATA_SRC_URLS['ar-base'] + div.xpath("./span[@class='btn_archived download']/a/@href")[0]
+                ),
                 consumer=parse_pdf_file
             )
         )
@@ -81,7 +84,8 @@ def parse_firms_detail_page(
         'src': request.response.request.url,
         'data_type': 'None',
         'url_append': '',
-        'share': share
+        'share': share,
+        'year': None,
     })
 
     logger.info(f'Scraped {share["ticker"]}\'s AR detail page.')
