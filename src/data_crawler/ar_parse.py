@@ -1,3 +1,4 @@
+import logging
 from logging import getLogger
 
 from httpx import AsyncClient
@@ -54,7 +55,7 @@ def parse_firms_detail_page(
         'identifier': selector.xpath("//span[@class='ticker_name']/text()")[0],
     }
 
-    logger.debug(f'Gathered stock metadata from {request.response.request.url}.')
+    logger.debug(f'Gathered stock metadata for {share["ticker"]} from {request.response.request.url}.')
 
     # Gather annual and interim reports download urls & Build new requests
     requests = []
@@ -63,7 +64,7 @@ def parse_firms_detail_page(
         m.update({
             'data_type': 'annual_report',
             'year': div.xpath("./span[@class='heading']/text()")[0].split(' ')[0],
-            'url_append': '',
+            'url_append': None,
             'share': share
         })
         requests.append(
@@ -76,14 +77,16 @@ def parse_firms_detail_page(
                 consumer=parse_pdf_file
             )
         )
-    logger.debug(f'Built requests for annual and interim reports download urls for {request.response.request.url}.')
+
+    logger.debug(f'Built requests for annual and interim reports download urls for {share["ticker"]} '
+                 f'from {request.response.request.url}.')
 
     # Build response metadata
     m = request.metadata.copy()
     m.update({
         'src': request.response.request.url,
         'data_type': 'None',
-        'url_append': '',
+        'url_append': None,
         'share': share,
         'year': None,
     })

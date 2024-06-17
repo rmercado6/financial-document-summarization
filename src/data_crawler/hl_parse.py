@@ -49,18 +49,7 @@ def parse_financial_statements_and_reports(
 
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
-
-    # Gather financial results tables information
-    financial_results_lines = []
-    for row in selector.xpath(
-            "//div[@id='financials-table-wrapper']/table[contains(@class, 'factsheet-table')]/tbody/tr"
-    ):
-        class_list = row.xpath("./@class")[0] if row.xpath("./@class") else []
-        cell = 'th' if class_list == 'factsheet-head' else 'td'
-        financial_results_lines.append([re.sub(r'(\n|\t|\r)+', '', x) for x in row.xpath(f"./{cell}/text()")])
-    data = '\n'.join(['\t'.join(_) for _ in financial_results_lines]).encode()
-
-    logger.debug(f'Gathered HL financial reports table for {request.response.request.url}.')
+    data = None
 
     # Gather share information
     share = {
@@ -71,28 +60,46 @@ def parse_financial_statements_and_reports(
 
     logger.debug(f'Gathered stock metadata from {request.response.request.url}.')
 
+    # Gather financial results tables information
+    financial_results_lines = []
+    rows = selector.xpath("//div[@id='financials-table-wrapper']/table[contains(@class, 'factsheet-table')]/tbody/tr")
+    if len(rows) > 0:
+        for row in rows:
+            class_list = row.xpath("./@class")[0] if row.xpath("./@class") else []
+            cell = 'th' if class_list == 'factsheet-head' else 'td'
+            financial_results_lines.append([re.sub(r'(\n|\t|\r)+', '', x) for x in row.xpath(f"./{cell}/text()")])
+        data = '\n'.join(['\t'.join(_) for _ in financial_results_lines]).encode()
+
+        logger.debug(f'Gathered HL financial reports table for {request.response.request.url}.')
+    else:
+        logger.warning(f'No financial results table found for {share["ticker"]} @ {request.response.request.url}.')
+
     # Gather annual and interim reports download urls & Build new requests
     requests = []
-    for a in selector.xpath("//div[@class='margin-top tab-content clearfix']/div[@class='grey-gradient clearfix']//a"):
-        m = request.metadata.copy()
-        m.update({
-            'data_type': re.sub(
-                r'(\n|\t|Download|download)',
-                '',
-                ''.join(a.xpath('.//text()'))
-            ).strip().replace('&amp', 'and').lower().replace(' ', '_'),
-            'url_append': '',
-            'year': datetime.now().year - 1,
-            'share': share
-        })
-        requests.append(
-            ScrapeRequest(
-                metadata=m,
-                request=client.request(method="GET", url=a.xpath("@href")[0]),
-                consumer=parse_pdf_file
+    links = selector.xpath("//div[@class='margin-top tab-content clearfix']/div[@class='grey-gradient clearfix']//a")
+    if len(links) > 0:
+        for a in links:
+            m = request.metadata.copy()
+            m.update({
+                'data_type': re.sub(
+                    r'(\n|\t|Download|download)',
+                    '',
+                    ''.join(a.xpath('.//text()'))
+                ).split('&amp')[0].strip().lower().replace(' ', '_'),
+                'url_append': '',
+                'year': datetime.now().year - 1,
+                'share': share
+            })
+            requests.append(
+                ScrapeRequest(
+                    metadata=m,
+                    request=client.request(method="GET", url=a.xpath("@href")[0]),
+                    consumer=parse_pdf_file
+                )
             )
-        )
-    logger.debug(f'Built requests for annual and interim reports download urls for {request.response.request.url}.')
+        logger.debug(f'Built requests for annual and interim reports download urls for {request.response.request.url}.')
+    else:
+        logger.warning(f'No annual reports found for {share["ticker"]} @ {request.response.request.url}.')
 
     # Build response metadata
     m = request.metadata.copy()

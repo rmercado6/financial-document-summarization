@@ -7,6 +7,7 @@ from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table
 from src.data_crawler.ar_scrape import scrape_ar_stocks_table
 from src.data_crawler.scrape_requests.handlers import scrape_request_handler
 
+
 logger: logging.Logger = logging.getLogger(LOGGER_NAME)
 
 
