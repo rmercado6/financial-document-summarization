@@ -43,7 +43,7 @@ def parse_firms_detail_page(
     :param client: Httpx AsyncClient HTTP Client to manage HTTP requests.
     :return: None
     """
-    logger.debug(f'Starting AR\'s firms detail parsing for {request.response.request.url}...')
+    logger.debug(f'Starting AR\'s firms detail parsing for {request.request.url}...')
 
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
@@ -55,7 +55,7 @@ def parse_firms_detail_page(
         'identifier': selector.xpath("//span[@class='ticker_name']/text()")[0],
     }
 
-    logger.debug(f'Gathered stock metadata for {share["ticker"]} from {request.response.request.url}.')
+    logger.debug(f'Gathered stock metadata for {share["ticker"]} from {request.request.url}.')
 
     # Gather annual and interim reports download urls & Build new requests
     requests = []
@@ -79,12 +79,12 @@ def parse_firms_detail_page(
         )
 
     logger.debug(f'Built requests for annual and interim reports download urls for {share["ticker"]} '
-                 f'from {request.response.request.url}.')
+                 f'from {request.request.url}.')
 
     # Build response metadata
     m = request.metadata.copy()
     m.update({
-        'src': request.response.request.url,
+        'src': request.request.url,
         'data_type': 'None',
         'url_append': None,
         'share': share,

@@ -15,7 +15,7 @@ class ScrapeRequest:
     def __init__(
             self,
             metadata: dict,
-            request: httpx.Request or Coroutine[Callable[..., Awaitable[None]]],
+            request: Coroutine[httpx.request, ..., httpx.Response],
             consumer: Callable
     ) -> None:
         self.__metadata = metadata.copy()
@@ -28,15 +28,12 @@ class ScrapeRequest:
         return self.__metadata
 
     @property
-    async def request(self) -> httpx.Response or Coroutine[Callable[..., Awaitable[None]]]:
-        """request: httpx.Request
-        To be used to await for the http request.
-        """
-        self.__response = await self.__request
-        return self.__response
+    def request(self) -> httpx.Request:
+        """request: httpx.Request"""
+        return self.__response.request
 
     @property
-    def response(self):
+    def response(self) -> httpx.Response:
         """response: httpx.Response"""
         return self.__response
 
@@ -45,10 +42,15 @@ class ScrapeRequest:
         """consumer: Callable"""
         return self.__consumer
 
+    async def make_request(self) -> httpx.Response:
+        """To be used to await for the http request."""
+        self.__response = await self.__request
+        return self.__response
+
     def restart(self, client: httpx.AsyncClient):
         self.__request = client.request(
-            method=self.response.request.method,
-            url=self.response.request.url
+            method=self.request.method,
+            url=self.request.url
         )
         return self
 

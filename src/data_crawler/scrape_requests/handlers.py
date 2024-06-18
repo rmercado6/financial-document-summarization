@@ -70,41 +70,41 @@ async def scrape_request_consumer(
                 queue.task_done()
                 continue
 
-            await __queue_item.request
+            await __queue_item.make_request()
 
-            logger.info('Processing Scrape Request %s', __queue_item.response.request.url)
+            logger.info('Processing Scrape Request %s', __queue_item.request.url)
 
             # Process redirected responses
             if __queue_item.response.is_redirect:
-                logger.info(f'Redirecting request {__queue_item.response.request.url} to {__queue_item.response.headers["Location"]}')
+                logger.info(f'Redirecting request {__queue_item.request.url} to {__queue_item.response.headers["Location"]}')
 
                 # Build new URL
                 url = httpx.URL(__queue_item.response.headers['Location'])
                 if not url.host:
                     url = httpx.URL(
                         __queue_item.response.headers['Location'],
-                        host=__queue_item.response.request.url.host,
-                        scheme=__queue_item.response.request.url.scheme
+                        host=__queue_item.request.url.host,
+                        scheme=__queue_item.request.url.scheme
                     )
                 url = str(url)
                 if 'url_append' in __queue_item.metadata.keys():
                     url += __queue_item.metadata['url_append']
 
                 # Update metadata with redirect tracking information
-                __queue_item.metadata.update({'redirected': {'from': __queue_item.response.request.url, 'to': url}})
+                __queue_item.metadata.update({'redirected': {'from': __queue_item.request.url, 'to': url}})
 
                 # Add new request to queue
                 await queue.put(
                     ScrapeRequest(
                         metadata=__queue_item.metadata,
-                        request=client.request(method=__queue_item.response.request.method, url=url),
+                        request=client.request(method=__queue_item.request.method, url=url),
                         consumer=__queue_item.consumer
                     )
                 )
 
             # Process successful requests
             elif __queue_item.response.is_success:
-                logger.debug(f'Successful request from queue: {__queue_item.response.request.url}. '
+                logger.debug(f'Successful request from queue: {__queue_item.request.url}. '
                              f'Sending request to consumer function {__queue_item.consumer.__name__}.')
 
                 response: ScrapeResponse = __queue_item.consumer(__queue_item, client=client)

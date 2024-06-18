@@ -47,7 +47,7 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(ScrapeRequest, type(item))
             self.assertEqual(self.sample_request['metadata'], item.metadata)
 
-            await item.request
+            await item.make_request()
 
             self.client.request.assert_awaited_with(
                 method=self.sample_request['method'],
