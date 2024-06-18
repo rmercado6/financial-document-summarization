@@ -76,7 +76,7 @@ async def scrape_request_consumer(
 
             # Process redirected responses
             if __queue_item.response.is_redirect:
-                logger.debug(f'Redirecting request {__queue_item.response.request.url} to {__queue_item.response.headers["Location"]}')
+                logger.info(f'Redirecting request {__queue_item.response.request.url} to {__queue_item.response.headers["Location"]}')
 
                 # Build new URL
                 url = httpx.URL(__queue_item.response.headers['Location'])
@@ -128,7 +128,9 @@ async def scrape_request_consumer(
             logger.warning('Error awaiting for http request response to %s', __queue_item.request)
             logger.exception(e)
             queue.task_done()
-            await queue.put(__queue_item)
+            with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
+                _.write(__queue_item.get_postmortem_log())
+            await queue.put(__queue_item.restart())
 
         finally:
             logger.debug(f'Request Consumer Released, sleeping...')

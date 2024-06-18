@@ -45,6 +45,20 @@ class ScrapeRequest:
         """consumer: Callable"""
         return self.__consumer
 
+    def restart(self, client: httpx.AsyncClient):
+        self.__request = client.request(
+            method=self.response.request.method,
+            url=self.response.request.url
+        )
+        return self
+
+    def get_postmortem_log(self) -> dict:
+        return {
+            'url': self.response.request.url,
+            'response': self.response.status_code,
+            'metadata': self.metadata
+        }
+
 
 class ScrapeResponse:
     """ConsumerResponse class
