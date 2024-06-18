@@ -15,7 +15,7 @@ class ScrapeRequest:
     def __init__(
             self,
             metadata: dict,
-            request: Coroutine[httpx.request, ..., httpx.Response],
+            request: Coroutine[httpx.request, Any, httpx.Response],
             consumer: Callable
     ) -> None:
         self.__metadata = metadata.copy()
