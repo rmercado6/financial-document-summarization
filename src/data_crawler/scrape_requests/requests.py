@@ -9,8 +9,8 @@ class ScrapeRequest:
     """
     __metadata: dict
     __request: httpx.Request or Coroutine[Callable[..., Awaitable[None]]]
-    __response: httpx.Response
     __consumer: Callable
+    __response: httpx.Response = None
 
     def __init__(
             self,
@@ -30,7 +30,7 @@ class ScrapeRequest:
     @property
     def request(self) -> httpx.Request:
         """request: httpx.Request"""
-        return self.__response.request
+        return self.__response.request if self.__response else None
 
     @property
     def response(self) -> httpx.Response:
@@ -42,23 +42,22 @@ class ScrapeRequest:
         """consumer: Callable"""
         return self.__consumer
 
-    async def make_request(self) -> httpx.Response:
+    async def send(self) -> httpx.Response:
         """To be used to await for the http request."""
         self.__response = await self.__request
         return self.__response
 
-    def restart(self, client: httpx.AsyncClient):
+    def reset(self, client: httpx.AsyncClient):
         self.__request = client.request(
-            method=self.request.method,
-            url=self.request.url
+            method=self.request.method if self.request else self.metadata['method'],
+            url=self.request.url if self.request else self.metadata['url'],
         )
         return self
 
     def get_postmortem_log(self) -> dict:
         return {
-            'url': self.response.request.url,
-            'response': self.response.status_code,
-            'metadata': self.metadata
+            'response': self.response.status_code if self.response else None,
+            'metadata': self.metadata if self.metadata else None
         }
 
 
@@ -72,6 +71,8 @@ class ScrapeResponse:
 
     def __init__(self, metadata: dict, data: str or bytes, further_requests: list[ScrapeRequest] = None) -> None:
         self.__metadata = metadata.copy()
+        if 'method' not in self.__metadata:
+            self.__metadata['method'] = 'GET'
         self.__data = data
         self.__further_requests = further_requests
 

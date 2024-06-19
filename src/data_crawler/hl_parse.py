@@ -79,6 +79,7 @@ def parse_financial_statements_and_reports(
     links = selector.xpath("//div[@class='margin-top tab-content clearfix']/div[@class='grey-gradient clearfix']//a")
     if len(links) > 0:
         for a in links:
+            url = a.xpath("@href")[0]
             m = request.metadata.copy()
             m.update({
                 'data_type': re.sub(
@@ -88,12 +89,14 @@ def parse_financial_statements_and_reports(
                 ).split('&amp')[0].strip().lower().replace(' ', '_'),
                 'url_append': '',
                 'year': datetime.now().year - 1,
-                'share': share
+                'share': share,
+                'url': url,
+                'method': 'GET'
             })
             requests.append(
                 ScrapeRequest(
                     metadata=m,
-                    request=client.request(method="GET", url=a.xpath("@href")[0]),
+                    request=client.request(method="GET", url=url),
                     consumer=parse_pdf_file
                 )
             )

@@ -33,6 +33,7 @@ async def scrape_request_producer(
         r = requests.pop()
         url = r['url'] + r['metadata']['url_append'] if 'url_append' in r['metadata'].keys() else r['url']
         logger.debug('Producing %s request: %s', r['method'], r['url'])
+        r['metadata']['url'] = url
         await queue.put(
             ScrapeRequest(
                 metadata=r['metadata'],
@@ -70,7 +71,7 @@ async def scrape_request_consumer(
                 queue.task_done()
                 continue
 
-            await __queue_item.make_request()
+            await __queue_item.send()
 
             logger.info('Processing Scrape Request %s', __queue_item.request.url)
 
@@ -91,7 +92,10 @@ async def scrape_request_consumer(
                     url += __queue_item.metadata['url_append']
 
                 # Update metadata with redirect tracking information
-                __queue_item.metadata.update({'redirected': {'from': __queue_item.request.url, 'to': url}})
+                __queue_item.metadata.update({
+                    'redirected_from': __queue_item.request.url,
+                    'url': url
+                })
 
                 # Add new request to queue
                 await queue.put(
@@ -125,12 +129,12 @@ async def scrape_request_consumer(
 
         # Handle Exceptions if any
         except Exception as e:
-            logger.warning('Error awaiting for http request response to %s', __queue_item.request)
+            logger.warning('Error consuming ScrapeRequest %s', __queue_item.request.metadata['url'])
             logger.exception(e)
             queue.task_done()
             with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
                 _.write(__queue_item.get_postmortem_log())
-            await queue.put(__queue_item.restart())
+            await queue.put(__queue_item.reset(client))
 
         finally:
             logger.debug(f'Request Consumer Released, sleeping...')

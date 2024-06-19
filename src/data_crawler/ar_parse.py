@@ -60,19 +60,22 @@ def parse_firms_detail_page(
     # Gather annual and interim reports download urls & Build new requests
     requests = []
     for div in selector.xpath("//div[@class='archived_report_content_block']/ul/li/div"):
+        url = DATA_SRC_URLS['ar-base'] + div.xpath("./span[@class='btn_archived download']/a/@href")[0]
         m = request.metadata.copy()
         m.update({
             'data_type': 'annual_report',
             'year': div.xpath("./span[@class='heading']/text()")[0].split(' ')[0],
             'url_append': None,
-            'share': share
+            'share': share,
+            'url': url,
+            'method': 'GET'
         })
         requests.append(
             ScrapeRequest(
                 metadata=m,
                 request=client.request(
                     method="GET",
-                    url=DATA_SRC_URLS['ar-base'] + div.xpath("./span[@class='btn_archived download']/a/@href")[0]
+                    url=url
                 ),
                 consumer=parse_pdf_file
             )

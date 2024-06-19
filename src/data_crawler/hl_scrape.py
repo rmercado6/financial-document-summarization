@@ -30,7 +30,9 @@ async def scrape_hl_index_stocks_table(url: str, n_pages: int = 6) -> list[dict[
         return [
             {
                 'metadata': {
-                    'url_append': DATA_SRC_URLS['hl-financial-statement-and-reports']
+                    'url_append': DATA_SRC_URLS['hl-financial-statement-and-reports'],
+                    'url': DATA_SRC_URLS['hl-base'] + url,
+                    'method': 'GET'
                 },
                 'method': 'GET',
                 'url': DATA_SRC_URLS['hl-base'] + url,

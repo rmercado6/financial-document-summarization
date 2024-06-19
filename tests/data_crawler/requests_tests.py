@@ -47,7 +47,7 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(ScrapeRequest, type(item))
             self.assertEqual(self.sample_request['metadata'], item.metadata)
 
-            await item.make_request()
+            await item.send()
 
             self.client.request.assert_awaited_with(
                 method=self.sample_request['method'],
@@ -104,7 +104,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             self.responses.task_done()
 
             self.assertTrue(type(item) is ScrapeResponse)
-            self.assertEqual({}, item.metadata)
+            self.assertEqual({'method': 'GET'}, item.metadata)
             self.assertEqual('', item.data)
             self.assertEqual([], item.further_requests)
 
@@ -243,6 +243,41 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         # Assert
         self.assertNoLogs(logging.getLogger('asyncio'), logging.ERROR)
         self.assertEqual(11, async_client_mock.await_count)
+
+    def tearDown(self):
+        logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')
+
+
+class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
+
+    def setUp(self):
+        logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
+        self.client_ex = mock.AsyncMock(AsyncClient)
+        self.client_ex.request.side_effect = Exception()
+
+        self.client = mock.AsyncMock(AsyncClient)
+        self.client.request.side_effect = [httpx.Response(200, content='sample content')]
+
+    async def test_request_restart(self):
+        request = ScrapeRequest(
+            metadata={
+                'url': '',
+                'method': 'GET'
+            },
+            request=self.client_ex.request(method='GET', url='http://test.url'),
+            consumer=lambda x, y: True
+        )
+        with self.assertRaises(Exception):
+            await request.send()
+        await request.send()
+
+        self.client_ex.request.assert_awaited_once()
+
+        self.assertTrue(request.get_postmortem_log() is not None)
+
+        self.assertTrue(type(request.reset(client=self.client)), ScrapeRequest)
+        await request.send()
+        self.client.request.assert_awaited_once()
 
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')

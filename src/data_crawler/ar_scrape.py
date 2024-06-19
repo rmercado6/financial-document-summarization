@@ -23,7 +23,10 @@ def scrape_ar_stocks_table(url: str) -> list[dict[str, any]]:
         logger.debug('Finished scraping AR stocks table')
         return [
             {
-                'metadata': {},
+                'metadata': {
+                    'url': DATA_SRC_URLS['ar-base'] + url,
+                    'method': 'GET'
+                },
                 'method': 'GET',
                 'url': DATA_SRC_URLS['ar-base'] + url,
                 'consumer': parse_firms_detail_page
