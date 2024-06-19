@@ -45,7 +45,7 @@ def parse_financial_statements_and_reports(
     :param client: AsyncClient HTTP Client to manage HTTP requests.
     :return: ScrapeResponse response with the scraped information and its metadata.
     """
-    logger.debug(f'Starting HL\'s financial statements table parsing for {request.request.url}...')
+    logger.debug(f'Starting HL\'s financial statements table parsing for {request.url}...')
 
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
@@ -58,7 +58,7 @@ def parse_financial_statements_and_reports(
         'identifier': selector.xpath("//head/meta[@name='Share_Identifier']/@content")[0],
     }
 
-    logger.debug(f'Gathered stock metadata from {request.request.url}.')
+    logger.debug(f'Gathered stock metadata from {request.url}.')
 
     # Gather financial results tables information
     financial_results_lines = []
@@ -70,9 +70,9 @@ def parse_financial_statements_and_reports(
             financial_results_lines.append([re.sub(r'(\n|\t|\r)+', '', x) for x in row.xpath(f"./{cell}/text()")])
         data = '\n'.join(['\t'.join(_) for _ in financial_results_lines]).encode()
 
-        logger.debug(f'Gathered HL financial reports table for {request.request.url}.')
+        logger.debug(f'Gathered HL financial reports table for {request.url}.')
     else:
-        logger.warning(f'No financial results table found for {share["ticker"]} @ {request.request.url}.')
+        logger.warning(f'No financial results table found for {share["ticker"]} @ {request.url}.')
 
     # Gather annual and interim reports download urls & Build new requests
     requests = []
@@ -100,14 +100,14 @@ def parse_financial_statements_and_reports(
                     consumer=parse_pdf_file
                 )
             )
-        logger.debug(f'Built requests for annual and interim reports download urls for {request.request.url}.')
+        logger.debug(f'Built requests for annual and interim reports download urls for {request.url}.')
     else:
-        logger.warning(f'No annual reports found for {share["ticker"]} @ {request.request.url}.')
+        logger.warning(f'No annual reports found for {share["ticker"]} @ {request.url}.')
 
     # Build response metadata
     m = request.metadata.copy()
     m.update({
-        'src': request.request.url,
+        'src': request.url,
         'data_type': 'financial_results',
         'url_append': '',
         'share': share,

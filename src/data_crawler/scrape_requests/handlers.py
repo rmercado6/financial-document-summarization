@@ -59,6 +59,7 @@ async def scrape_request_consumer(
     """
     logger.debug(f'Starting Request Consumer')
     while True:
+        __queue_item: ScrapeRequest or None = None
         try:
             logger.debug('Request Consumer looking on queue for response to handle. qsize: %s',
                          queue.qsize())
@@ -73,19 +74,19 @@ async def scrape_request_consumer(
 
             await __queue_item.send()
 
-            logger.info('Processing Scrape Request %s', __queue_item.request.url)
+            logger.info('Processing Scrape Request %s', __queue_item.url)
 
             # Process redirected responses
             if __queue_item.response.is_redirect:
-                logger.info(f'Redirecting request {__queue_item.request.url} to {__queue_item.response.headers["Location"]}')
+                logger.info(f'Redirecting request {__queue_item.url} to {__queue_item.response.headers["Location"]}')
 
                 # Build new URL
                 url = httpx.URL(__queue_item.response.headers['Location'])
                 if not url.host:
                     url = httpx.URL(
                         __queue_item.response.headers['Location'],
-                        host=__queue_item.request.url.host,
-                        scheme=__queue_item.request.url.scheme
+                        host=__queue_item.response.request.url.host,
+                        scheme=__queue_item.response.request.url.scheme
                     )
                 url = str(url)
                 if 'url_append' in __queue_item.metadata.keys():
@@ -93,7 +94,7 @@ async def scrape_request_consumer(
 
                 # Update metadata with redirect tracking information
                 __queue_item.metadata.update({
-                    'redirected_from': __queue_item.request.url,
+                    'redirected_from': __queue_item.url,
                     'url': url
                 })
 
@@ -108,7 +109,7 @@ async def scrape_request_consumer(
 
             # Process successful requests
             elif __queue_item.response.is_success:
-                logger.debug(f'Successful request from queue: {__queue_item.request.url}. '
+                logger.debug(f'Successful request from queue: {__queue_item.url}. '
                              f'Sending request to consumer function {__queue_item.consumer.__name__}.')
 
                 response: ScrapeResponse = __queue_item.consumer(__queue_item, client=client)
@@ -121,22 +122,33 @@ async def scrape_request_consumer(
                     [await queue.put(request) for request in response.further_requests]
                     logger.debug(f'Added {len(response.further_requests)} requests to request queue with '
                                  f'updated qsize {queue.qsize()}.')
-                logger.debug('Finished processing request.')
+
+            else:
+                raise Exception(f'Unknown status code {__queue_item.response.status}')
+
+            queue.task_done()  # Remove processed item from queue
+            logger.debug('Task removed from queue.')
 
         # Handle Exceptions if any
         except Exception as e:
-            logger.warning('Error consuming ScrapeRequest %s', __queue_item.request.metadata['url'])
+            if __queue_item is not None:
+                logger.warning('Error consuming ScrapeRequest %s', __queue_item.url)
+                # Log error to file
+                with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
+                    _.write(__queue_item.get_postmortem_log())
+                if __queue_item.reset(client) < MAX_RETRIES:
+                    await queue.put(__queue_item)
+            else:
+                logger.warning('Error attempting to get ScrapeRequest from queue.')
+                raise e
+
             logger.exception(e)
-            with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
-                _.write(__queue_item.get_postmortem_log())
-            if __queue_item.reset(client) < MAX_RETRIES:
-                await queue.put(__queue_item)
+            queue.task_done()
 
         finally:
-            queue.task_done()   # Remove processed item from queue
-            logger.debug('Task removed from queue.')
-            logger.info(f'Finished processing request {__queue_item.metadata["url"]}. '
-                        f'Request queue: {queue.qsize()}; Response queue: {response_queue.qsize()}')
+            if __queue_item is not None:
+                logger.info(f'Finished processing request {__queue_item.url}. '
+                            f'Request queue: {queue.qsize()}; Response queue: {response_queue.qsize()}')
             logger.debug(f'Request Consumer Released, sleeping...')
             await asyncio.sleep(CONSUMER_SLEEP_TIME)
             logger.debug('Resuming Request Consumer.')
@@ -150,26 +162,20 @@ async def scrape_response_consumer(response_queue: asyncio.Queue) -> None:
     """
     logger.debug(f'Starting Response Consumer')
     while True:
-        try:
-            __queue_item = await response_queue.get()
-            logger.debug('Got response from queue: %s', __queue_item)
+        __queue_item = await response_queue.get()
+        logger.debug('Got response from queue: %s', __queue_item)
 
-            if __queue_item.data is not None:
-                with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
-                    _.write(__queue_item.jsonl())
+        if __queue_item.data is not None:
+            with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                _.write(__queue_item.jsonl())
 
-            response_queue.task_done()
-            logger.debug('Task removed from queue.')
-            logger.info('Wrote response to file.')
+        response_queue.task_done()
+        logger.debug('Task removed from queue.')
+        logger.info('Wrote response to file.')
 
-        except Exception as e:
-            logger.exception(e)
-            response_queue.task_done()
-
-        finally:
-            logger.debug(f'Response Consumer Idle. Sleeping...')
-            await asyncio.sleep(CONSUMER_SLEEP_TIME)
-            logger.debug('Resuming Response Consumer.')
+        logger.debug(f'Response Consumer Idle. Sleeping...')
+        await asyncio.sleep(CONSUMER_SLEEP_TIME)
+        logger.debug('Resuming Response Consumer.')
 
 
 async def scrape_request_handler(

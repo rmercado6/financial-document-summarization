@@ -22,6 +22,8 @@ class ScrapeRequest:
         self.__metadata = metadata.copy()
         self.__request = request
         self.__consumer = consumer
+        if "url" not in self.__metadata.keys():
+            self.__metadata["url"] = ''
 
     @property
     def metadata(self) -> dict:
@@ -43,24 +45,35 @@ class ScrapeRequest:
         """consumer: Callable"""
         return self.__consumer
 
+    @property
+    def url(self) -> str:
+        try:
+            return str(self.__response.request.url)
+        except AttributeError or Exception:
+            return self.metadata["url"]
+
     async def send(self) -> httpx.Response:
         """To be used to await for the http request."""
         self.__response = await self.__request
         return self.__response
 
     def reset(self, client: httpx.AsyncClient) -> int:
-        self.__request = client.request(
-            method=self.request.method if self.request else self.metadata['method'],
-            url=self.request.url if self.request else self.metadata['url'],
-        )
+        try:
+            self.__request = client.request(method=self.request.method, url=self.request.url)
+        except AttributeError or Exception:
+            self.__request = client.request(method=self.metadata['method'], url=self.metadata['url'])
         self.__reset_count += 1
         return self.__reset_count
 
     def get_postmortem_log(self) -> dict:
-        return {
-            'response': self.response.status_code if self.response else None,
-            'metadata': self.metadata if self.metadata else None
-        }
+        try:
+            return {
+                'response': self.response.status_code,
+                'metadata': self.metadata,
+                'resets': self.__reset_count
+            }
+        except AttributeError or Exception:
+            return {'response': None, 'metadata': self.metadata, 'resets': self.__reset_count}
 
 
 class ScrapeResponse:

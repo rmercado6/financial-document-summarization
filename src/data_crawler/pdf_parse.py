@@ -31,7 +31,7 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
 
         data = data.encode()
         metadata = {
-            'src': request.request.url,
+            'src': request.url,
             'data_type': request.metadata['data_type'],
             'url_append': '',
             'share': request.metadata['share'],
