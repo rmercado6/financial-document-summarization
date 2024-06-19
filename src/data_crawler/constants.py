@@ -38,6 +38,9 @@ NO_REQUEST_CONSUMERS = 10
 # Number of ScrapeResponse Consumers
 NO_RESPONSE_CONSUMERS = 10
 
+# Maximum number of request attempts
+MAX_RETRIES = 3
+
 # ID for the logger
 LOGGER_NAME = 'data-crawler'
 

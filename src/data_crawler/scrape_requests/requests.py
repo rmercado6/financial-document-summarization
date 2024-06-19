@@ -11,6 +11,7 @@ class ScrapeRequest:
     __request: httpx.Request or Coroutine[Callable[..., Awaitable[None]]]
     __consumer: Callable
     __response: httpx.Response = None
+    __reset_count = 0
 
     def __init__(
             self,
@@ -47,12 +48,13 @@ class ScrapeRequest:
         self.__response = await self.__request
         return self.__response
 
-    def reset(self, client: httpx.AsyncClient):
+    def reset(self, client: httpx.AsyncClient) -> int:
         self.__request = client.request(
             method=self.request.method if self.request else self.metadata['method'],
             url=self.request.url if self.request else self.metadata['url'],
         )
-        return self
+        self.__reset_count += 1
+        return self.__reset_count
 
     def get_postmortem_log(self) -> dict:
         return {

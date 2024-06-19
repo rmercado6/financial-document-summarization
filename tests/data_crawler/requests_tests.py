@@ -269,7 +269,6 @@ class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
         )
         with self.assertRaises(Exception):
             await request.send()
-        await request.send()
 
         self.client_ex.request.assert_awaited_once()
 

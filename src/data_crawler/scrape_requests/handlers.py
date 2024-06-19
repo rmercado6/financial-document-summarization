@@ -8,7 +8,7 @@ from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.constants import (HTTP_CLIENT_CONFIG, CONSUMER_SLEEP_TIME, NO_REQUEST_CONSUMERS,
-                                        NO_RESPONSE_CONSUMERS)
+                                        NO_RESPONSE_CONSUMERS, MAX_RETRIES)
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
 
 
@@ -123,20 +123,20 @@ async def scrape_request_consumer(
                                  f'updated qsize {queue.qsize()}.')
                 logger.debug('Finished processing request.')
 
-            # Remove processed item from queue
-            queue.task_done()
-            logger.debug('Task removed from queue.')
-
         # Handle Exceptions if any
         except Exception as e:
             logger.warning('Error consuming ScrapeRequest %s', __queue_item.request.metadata['url'])
             logger.exception(e)
-            queue.task_done()
             with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
                 _.write(__queue_item.get_postmortem_log())
-            await queue.put(__queue_item.reset(client))
+            if __queue_item.reset(client) < MAX_RETRIES:
+                await queue.put(__queue_item)
 
         finally:
+            queue.task_done()   # Remove processed item from queue
+            logger.debug('Task removed from queue.')
+            logger.info(f'Finished processing request {__queue_item.metadata["url"]}. '
+                        f'Request queue: {queue.qsize()}; Response queue: {response_queue.qsize()}')
             logger.debug(f'Request Consumer Released, sleeping...')
             await asyncio.sleep(CONSUMER_SLEEP_TIME)
             logger.debug('Resuming Request Consumer.')
@@ -160,6 +160,7 @@ async def scrape_response_consumer(response_queue: asyncio.Queue) -> None:
 
             response_queue.task_done()
             logger.debug('Task removed from queue.')
+            logger.info('Wrote response to file.')
 
         except Exception as e:
             logger.exception(e)
