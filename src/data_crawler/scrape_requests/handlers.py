@@ -43,6 +43,103 @@ async def scrape_request_producer(
         )
 
 
+async def handle_redirect(
+        scrape_request: ScrapeRequest,
+        queue: asyncio.Queue,
+        client: httpx.AsyncClient
+) -> None:
+    """Handle http redirects
+
+    :param scrape_request: ScrapeRequest item
+    :param queue: asyncio.Queue Scrape Request queue
+    :param client: AsyncClient HTTP Client for managing HTTP requests
+    """
+    logger.info(f'Redirecting request {scrape_request.url} to {scrape_request.response.headers["Location"]}')
+
+    # Build new URL
+    url = httpx.URL(scrape_request.response.headers['Location'])
+    if not url.host:
+        url = httpx.URL(
+            scrape_request.response.headers['Location'],
+            host=scrape_request.response.request.url.host,
+            scheme=scrape_request.response.request.url.scheme
+        )
+    url = str(url)
+    if 'url_append' in scrape_request.metadata.keys():
+        url += scrape_request.metadata['url_append']
+
+    # Update metadata with redirect tracking information
+    scrape_request.metadata.update({
+        'redirected_from': scrape_request.url,
+        'url': url
+    })
+
+    # Add new request to queue
+    await queue.put(
+        ScrapeRequest(
+            metadata=scrape_request.metadata,
+            request=client.request(method=scrape_request.request.method, url=url),
+            consumer=scrape_request.consumer
+        )
+    )
+
+
+async def handle_success(
+        scrape_request: ScrapeRequest,
+        queue: asyncio.Queue,
+        response_queue: asyncio.Queue,
+        client: httpx.AsyncClient
+) -> None:
+    """Scrape http successful request response handler
+
+    :param scrape_request: ScrapeRequest item
+    :param queue: asyncio.Queue Scrape Request queue
+    :param response_queue: asyncio.Queue Scrape Response queue
+    :param client: AsyncClient HTTP Client for managing HTTP requests
+    """
+    logger.debug(f'Successful request from queue: {scrape_request.url}. '
+                 f'Sending request to consumer function {scrape_request.consumer.__name__}.')
+
+    response: ScrapeResponse = scrape_request.consumer(scrape_request, client=client)
+
+    logger.debug(f'Got response from consumer function.')
+    await response_queue.put(response)
+    if response.further_requests:
+        logger.debug(f'Adding {len(response.further_requests)} requests to request queue with '
+                     f'actual qsize {queue.qsize()}.')
+        [await queue.put(request) for request in response.further_requests]
+        logger.debug(f'Added {len(response.further_requests)} requests to request queue with '
+                     f'updated qsize {queue.qsize()}.')
+
+
+async def handle_scrape_request_consumer_exception(
+        exception: Exception,
+        scrape_request: ScrapeRequest,
+        queue: asyncio.Queue,
+        client: httpx.AsyncClient
+) -> None:
+    """Scrape request consumer exception handler
+
+    :param exception: Exception to be handled
+    :param scrape_request: ScrapeRequest item
+    :param queue: asyncio.Queue Scrape Request queue
+    :param client: AsyncClient HTTP Client for managing HTTP requests
+    """
+    if scrape_request is not None:
+        logger.warning('Error consuming ScrapeRequest %s', scrape_request.url)
+        # Log error to file
+        with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
+            _.write(scrape_request.get_postmortem_log())
+        if scrape_request.reset(client) < MAX_RETRIES:
+            await queue.put(scrape_request)
+    else:
+        logger.warning('Error attempting to get ScrapeRequest from queue.')
+        raise exception
+
+    logger.exception(exception)
+    queue.task_done()
+
+
 async def scrape_request_consumer(
         client: AsyncClient,
         queue: asyncio.Queue,
@@ -59,97 +156,46 @@ async def scrape_request_consumer(
     """
     logger.debug(f'Starting Request Consumer')
     while True:
-        __queue_item: ScrapeRequest or None = None
+        scrape_request: ScrapeRequest or None = None
         try:
-            logger.debug('Request Consumer looking on queue for response to handle. qsize: %s',
-                         queue.qsize())
-            __queue_item = await queue.get()
-            logger.debug('Got request from queue[%s]: %s', queue.qsize(), __queue_item)
+            # Get scrape request from queue
+            logger.debug('Request Consumer looking on queue for response to handle. qsize: %s',queue.qsize())
+            scrape_request = await queue.get()
+            logger.debug('Got request from queue[%s]: %s', queue.qsize(), scrape_request)
 
             # Verify queue item is a compatible Request, remove if not
-            if type(__queue_item) is not ScrapeRequest:
-                logger.warning(f'Bad request from queue. {type(__queue_item)} object is not a ScrapeRequest object.')
+            if type(scrape_request) is not ScrapeRequest:
+                logger.warning(f'Bad request from queue. {type(scrape_request)} object is not a ScrapeRequest object.')
                 queue.task_done()
                 continue
 
-            await __queue_item.send()
+            # Execute http request
+            await scrape_request.send()
 
-            logger.info('Processing Scrape Request %s', __queue_item.url)
-
-            # Process redirected responses
-            if __queue_item.response.is_redirect:
-                logger.info(f'Redirecting request {__queue_item.url} to {__queue_item.response.headers["Location"]}')
-
-                # Build new URL
-                url = httpx.URL(__queue_item.response.headers['Location'])
-                if not url.host:
-                    url = httpx.URL(
-                        __queue_item.response.headers['Location'],
-                        host=__queue_item.response.request.url.host,
-                        scheme=__queue_item.response.request.url.scheme
-                    )
-                url = str(url)
-                if 'url_append' in __queue_item.metadata.keys():
-                    url += __queue_item.metadata['url_append']
-
-                # Update metadata with redirect tracking information
-                __queue_item.metadata.update({
-                    'redirected_from': __queue_item.url,
-                    'url': url
-                })
-
-                # Add new request to queue
-                await queue.put(
-                    ScrapeRequest(
-                        metadata=__queue_item.metadata,
-                        request=client.request(method=__queue_item.request.method, url=url),
-                        consumer=__queue_item.consumer
-                    )
-                )
-
-            # Process successful requests
-            elif __queue_item.response.is_success:
-                logger.debug(f'Successful request from queue: {__queue_item.url}. '
-                             f'Sending request to consumer function {__queue_item.consumer.__name__}.')
-
-                response: ScrapeResponse = __queue_item.consumer(__queue_item, client=client)
-
-                logger.debug(f'Got response from consumer function.')
-                await response_queue.put(response)
-                if response.further_requests:
-                    logger.debug(f'Adding {len(response.further_requests)} requests to request queue with '
-                                 f'actual qsize {queue.qsize()}.')
-                    [await queue.put(request) for request in response.further_requests]
-                    logger.debug(f'Added {len(response.further_requests)} requests to request queue with '
-                                 f'updated qsize {queue.qsize()}.')
-
+            # Process response
+            logger.info('Processing Scrape Request %s', scrape_request.url)
+            if scrape_request.response.is_redirect:     # Process redirected responses
+                await handle_redirect(scrape_request, queue, client)
+            elif scrape_request.response.is_success:    # Process successful requests
+                await handle_success(scrape_request, queue, response_queue, client)
             else:
-                raise Exception(f'Unknown status code {__queue_item.response.status}')
+                raise Exception(f'Unknown status code {scrape_request.response.status}')
 
-            queue.task_done()  # Remove processed item from queue
+            # Remove processed item from queue
+            queue.task_done()
             logger.debug('Task removed from queue.')
 
         # Handle Exceptions if any
         except Exception as e:
-            if __queue_item is not None:
-                logger.warning('Error consuming ScrapeRequest %s', __queue_item.url)
-                # Log error to file
-                with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
-                    _.write(__queue_item.get_postmortem_log())
-                if __queue_item.reset(client) < MAX_RETRIES:
-                    await queue.put(__queue_item)
-            else:
-                logger.warning('Error attempting to get ScrapeRequest from queue.')
-                raise e
-
-            logger.exception(e)
-            queue.task_done()
+            await handle_scrape_request_consumer_exception(e, scrape_request, queue, client)
 
         finally:
-            if __queue_item is not None:
-                logger.info(f'Finished processing request {__queue_item.url}. '
+            if scrape_request is not None:
+                logger.info(f'Finished processing request {scrape_request.url}. '
                             f'Request queue: {queue.qsize()}; Response queue: {response_queue.qsize()}')
             logger.debug(f'Request Consumer Released, sleeping...')
+
+            # Sleep consumer for configured amount of time
             await asyncio.sleep(CONSUMER_SLEEP_TIME)
             logger.debug('Resuming Request Consumer.')
 
