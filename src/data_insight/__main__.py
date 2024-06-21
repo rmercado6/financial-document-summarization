@@ -29,12 +29,15 @@ def print_section(title: str, printable) -> None:
 
 
 def main():
+    print('Getting insight from data-crawler output...')
     rows = []
     with jsonlines.open('./out/data-crawler/data.jsonl') as reader:
         for line in reader:
             line.pop('doc')
             rows.append(line)
     df = pd.DataFrame(columns=['ticker', 'title', 'document_type', 'year'], data=rows)
+    df['title'] = df['title'].apply(lambda s: s.upper())
+    # df['ticker'] = df['ticker'].apply(lambda s: s.replace('.', ' ').strip())
 
     logger.info(f'{" DATA INSIGHTS ":*^100}')
 
