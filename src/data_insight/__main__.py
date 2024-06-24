@@ -2,6 +2,7 @@ import pandas as pd
 import jsonlines
 import logging
 
+from sys import getsizeof
 from pathlib import Path
 from tabulate import tabulate
 
@@ -33,13 +34,14 @@ def main():
     rows = []
     with jsonlines.open('./out/data-crawler/data.jsonl') as reader:
         for line in reader:
+            line['doc_size'] = getsizeof(line['doc'])
             line.pop('doc')
             rows.append(line)
-    df = pd.DataFrame(columns=['ticker', 'title', 'document_type', 'year'], data=rows)
+    df = pd.DataFrame(columns=['ticker', 'title', 'document_type', 'year', 'doc_size'], data=rows)
     df['title'] = df['title'].apply(lambda s: s.upper())
     # df['ticker'] = df['ticker'].apply(lambda s: s.replace('.', ' ').strip())
 
-    logger.info(f'{" DATA INSIGHTS ":*^100}')
+    logger.info(f'{" DATA INSIGHTS ":*^150}')
 
     # Print total number of documents
     print_section('Total number of collected documents:', '\t' + str(df.shape[0]))
@@ -55,6 +57,26 @@ def main():
             headers=['Document Type', 'Count'],
         )
     )
+
+    # Print amount of documents per document_type
+    print_section(
+        'Document file size statistics for all collected data:',
+        tabulate(
+            df.aggregate({'doc_size': ['min', 'max', 'mean', 'median', 'std', 'var']}).T,
+            showindex=False,
+            headers=['Min', 'Max', 'Mean', 'Median', 'Standard Deviation', 'Variance'],
+        )
+    )
+
+    # Print amount of documents per document_type
+    print_section(
+        'Document file size statistics by document type:',
+        tabulate(
+            df.groupby(['document_type']).aggregate({'doc_size': ['min', 'max', 'mean', 'median', 'std', 'var']}),
+            headers=['Document Type', 'Min', 'Max', 'Mean', 'Median', 'Standard Deviation', 'Variance'],
+        )
+    )
+    df.drop(columns=['doc_size'], inplace=True)
 
     # Print amount of documents per firm
     print_section(
@@ -77,7 +99,7 @@ def main():
         )
     )
 
-    logger.info(f'{"":*^100}')
+    logger.info(f'{"":*^150}')
 
 
 if __name__ == '__main__':
