@@ -5,6 +5,7 @@ class Document:
     __year: str
     __type: str
     __content: str
+    __chunks: list = None
 
     def __init__(
             self,
@@ -28,9 +29,6 @@ class Document:
             self.__type = type
             self.__content = content
 
-    def get_chunks(self) -> list[str]:
-        pass
-
     @property
     def title(self) -> str:
         return self.__title
@@ -50,3 +48,11 @@ class Document:
     @property
     def content(self) -> str:
         return self.__content
+
+    @property
+    def chunks(self):
+        return self.__chunks
+
+    @chunks.setter
+    def chunks(self, value):
+        self.__chunks = value
