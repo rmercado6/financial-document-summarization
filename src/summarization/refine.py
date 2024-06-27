@@ -16,7 +16,7 @@ refine_prompt_template = """
               """
 
 
-def refine(model, input_documents: list):
+def refine(model, input_documents: list, return_intermediate_steps: bool = False):
     question_prompt = PromptTemplate(template=question_prompt_template, input_variables=["text"])
     refine_prompt = PromptTemplate(template=refine_prompt_template, input_variables=["text"])
 
@@ -25,7 +25,7 @@ def refine(model, input_documents: list):
         chain_type="refine",
         question_prompt=question_prompt,
         refine_prompt=refine_prompt,
-        return_intermediate_steps=False,
+        return_intermediate_steps=return_intermediate_steps,
     )
 
     return refine_chain.invoke({"input_documents": input_documents})
