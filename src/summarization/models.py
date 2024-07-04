@@ -4,6 +4,9 @@ from langchain_community.llms import OpenAI
 from langchain_huggingface import HuggingFaceEndpoint
 
 
+MODELS = ['gpt', 'llama', 'mistral']
+
+
 def load_huggingface_model(repo_id):
     """
     load open source models from huggingface
@@ -39,9 +42,24 @@ def load_openai_model(model_name):
     return llm
 
 
-def load_model(model_name):
+def load_model(model_name: str):
+    """
+    Load LLM
+    :param model_name:
+    :return: Loaded LLM Model
+    """
+
+    # Validate the model connection is implemented
+    if model_name.lower() not in MODELS:
+        raise ValueError(f'Unknown model {model_name}. Available models: {MODELS}.')
+
+    # Load GPT
     if model_name == 'gpt':
         return load_openai_model("gpt-3.5-turbo-instruct")
-    else:
-        # model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-        return load_huggingface_model("mistralai/Mistral-7B-Instruct-v0.3")
+
+    # Load any other Huggingface model, defaults to llama
+    __model: str = "meta-llama/Meta-Llama-3-8B-Instruct"
+    if model_name == 'mistral':
+        __model = "mistralai/Mistral-7B-Instruct-v0.3"
+
+    return load_huggingface_model(__model)
