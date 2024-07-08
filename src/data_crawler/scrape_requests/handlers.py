@@ -159,7 +159,7 @@ async def scrape_request_consumer(
         scrape_request: ScrapeRequest or None = None
         try:
             # Get scrape request from queue
-            logger.debug('Request Consumer looking on queue for response to handle. qsize: %s',queue.qsize())
+            logger.debug('Request Consumer looking on queue for response to handle. qsize: %s', queue.qsize())
             scrape_request = await queue.get()
             logger.debug('Got request from queue[%s]: %s', queue.qsize(), scrape_request)
 
