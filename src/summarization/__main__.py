@@ -6,6 +6,7 @@ from src.summarization.models import load_model
 from src.summarization.document import Document
 from src.summarization.text_splitter import TextSplitter
 from src.summarization.refine import refine
+from src.summarization.mapreduce import map_reduce
 
 
 if __name__ == "__main__":
@@ -28,7 +29,12 @@ if __name__ == "__main__":
     doc.chunks = text_splitter.chunk_document(doc)
 
     # Do refine pipeline
-    refine_outputs = refine(model, doc.chunks)
+    refine_outputs = refine(model, doc.chunks, True)
+    # map_reduce_outputs = map_reduce(model, doc.chunks, True)
+
+    # Print intermediate steps
+    for k, v in refine_outputs.items():
+        print(v)
 
     # Print final output
     print(refine_outputs['output_text'])
