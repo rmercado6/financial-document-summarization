@@ -1,4 +1,3 @@
-import pypdf
 import pymupdf
 import pymupdf4llm
 
