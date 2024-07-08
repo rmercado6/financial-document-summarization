@@ -4,6 +4,7 @@ import re
 from httpx import AsyncClient
 from lxml import etree
 from datetime import datetime
+from markdownify import markdownify as md
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
@@ -49,7 +50,6 @@ def parse_financial_statements_and_reports(
 
     parser = etree.HTMLParser()
     selector = etree.fromstring(request.response.text, parser)
-    data = None
 
     # Gather share information
     share = {
@@ -61,17 +61,14 @@ def parse_financial_statements_and_reports(
     logger.debug(f'Gathered stock metadata from {request.url}.')
 
     # Gather financial results tables information
-    financial_results_lines = []
-    rows = selector.xpath("//div[@id='financials-table-wrapper']/table[contains(@class, 'factsheet-table')]/tbody/tr")
-    if len(rows) > 0:
-        for row in rows:
-            class_list = row.xpath("./@class")[0] if row.xpath("./@class") else []
-            cell = 'th' if class_list == 'factsheet-head' else 'td'
-            financial_results_lines.append([re.sub(r'(\n|\t|\r)+', '', x) for x in row.xpath(f"./{cell}/text()")])
-        data = '\n'.join(['\t'.join(_) for _ in financial_results_lines]).encode()
-
+    data = None
+    try:
+        financials_table = selector.xpath("//div[@id='financials-table-wrapper']")
+        inner_html = etree.tostring(financials_table[0]).decode().replace('&#13;', '')
+        markdown = md(inner_html)
+        data = markdown.encode()
         logger.debug(f'Gathered HL financial reports table for {request.url}.')
-    else:
+    except Exception:
         logger.warning(f'No financial results table found for {share["ticker"]} @ {request.url}.')
 
     # Gather annual and interim reports download urls & Build new requests
