@@ -1,4 +1,6 @@
 import pypdf
+import pymupdf
+import pymupdf4llm
 
 from logging import getLogger
 from io import BytesIO
@@ -17,19 +19,18 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
     :param client: AsyncClient or None client sent by request consumers, useful if new requests are to be made
     :return: ConsumerResponse object containing the parsed data
     """
-    data = ''
-    metadata = request.metadata.copy()
-    byte_stream = BytesIO(request.response.content)
-    pdf_reader = pypdf.PdfReader(byte_stream)
+    data: bytes = b''
+    metadata: dict = request.metadata.copy()
+    byte_stream: BytesIO = BytesIO(request.response.content)
+    document: pymupdf.Document = pymupdf.Document(stream=byte_stream)
 
     try:
         logger.debug(f'Starting {request.metadata["share"]["ticker"]}\'s financial reports PDF file '
                      f'\'{request.metadata["data_type"]}\' download process...')
 
-        for page in pdf_reader.pages:
-            data += page.extract_text()
+        md_text = pymupdf4llm.to_markdown(document)
 
-        data = data.encode()
+        data = md_text.encode()
         metadata = {
             'src': request.url,
             'data_type': request.metadata['data_type'],
