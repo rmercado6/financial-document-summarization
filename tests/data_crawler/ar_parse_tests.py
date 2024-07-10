@@ -7,7 +7,7 @@ from httpx import Client
 
 from src.data_crawler.constants import LOGGING_CONFIG
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_page
+from src.data_crawler.parsers.ar_parse import parse_stocks_table, parse_firms_detail_page
 
 
 # Set up Logger

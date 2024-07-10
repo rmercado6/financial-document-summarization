@@ -8,7 +8,7 @@ from markdownify import markdownify as md
 
 from src.data_crawler.constants import LOGGER_NAME
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.pdf_parse import parse_pdf_file
+from src.data_crawler.parsers.pdf_parse import parse_pdf_file
 
 
 logger = logging.getLogger(LOGGER_NAME)

@@ -3,8 +3,7 @@ import logging
 
 from src.data_crawler.logger import safely_start_logger
 from src.data_crawler.constants import DATA_SRC_URLS, N_PAGES, LOGGER_NAME
-from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table
-from src.data_crawler.ar_scrape import scrape_ar_stocks_table
+from src.data_crawler.scraping import scrape_ar_stocks_table, scrape_hl_index_stocks_table
 from src.data_crawler.scrape_requests.handlers import scrape_request_handler
 
 
@@ -30,7 +29,7 @@ async def main():
     # limited_requests = scrape_requests[:10]
 
     # Start the scraping process
-    await scrape_request_handler(scrape_requests)
+    await scrape_request_handler(scrape_requests[:1])
 
     logger.info('DONE')
 

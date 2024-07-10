@@ -1,4 +1,3 @@
-import logging
 from logging import getLogger
 
 from httpx import AsyncClient
@@ -6,7 +5,7 @@ from lxml import etree
 
 from src.data_crawler.constants import LOGGER_NAME, DATA_SRC_URLS
 from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.pdf_parse import parse_pdf_file
+from src.data_crawler.parsers.pdf_parse import parse_pdf_file
 
 
 logger = getLogger(LOGGER_NAME)
