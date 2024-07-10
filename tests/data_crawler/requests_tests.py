@@ -12,7 +12,7 @@ from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
 from src.data_crawler.scrape_requests.handlers.scrape_request_handler import scrape_request_handler
 from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.scrape_requests.handlers.producers import scrape_request_producer
-from src.data_crawler.scrape_requests.handlers.consumers import scrape_request_consumer
+from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer
 from src.data_crawler.parsers.ar_parse import parse_firms_detail_page
 
 # Set up Logger
@@ -90,7 +90,7 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 
@@ -144,7 +144,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 
@@ -178,7 +178,7 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 

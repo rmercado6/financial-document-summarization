@@ -7,7 +7,7 @@ from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME, HTTP_CLIENT_CONFIG, NO_REQUEST_CONSUMERS, NO_RESPONSE_CONSUMERS
 from src.data_crawler.scrape_requests.handlers.producers import scrape_request_producer
-from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer, scrape_response_consumer
+from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer, ScrapeResponseConsumer
 
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -51,7 +51,7 @@ async def scrape_request_handler(
     logger.debug('Generated consumers for ScrapeRequest object processing.')
 
     response_consumers = [  # Generate consumers to process the ScrapeRequest objects
-        asyncio.create_task(scrape_response_consumer(response_queue))
+        asyncio.create_task(ScrapeResponseConsumer(response_queue, _)())
         for _ in range(NO_RESPONSE_CONSUMERS)
     ]
     logger.debug('Generated consumers for ScrapeResponse object processing.')

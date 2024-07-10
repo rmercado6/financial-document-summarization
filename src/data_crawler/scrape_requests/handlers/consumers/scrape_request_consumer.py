@@ -1,19 +1,18 @@
 import logging
 import asyncio
-import uuid
 
 from httpx import AsyncClient
 
 from src.data_crawler.scrape_requests import ScrapeRequest
 from src.data_crawler.scrape_requests.handlers import redirect_handler, success_handler
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
+from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler, Consumer
 from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME
 
 
 logger = logging.getLogger(LOGGER_NAME)
 
 
-class ScrapeRequestConsumer:
+class ScrapeRequestConsumer(Consumer):
     """Scraping Request consumer
 
     Processes and handles requests through the scraping process.
@@ -23,7 +22,6 @@ class ScrapeRequestConsumer:
     :param response_queue: asyncio.Queue    Scrape Response queue
     """
 
-    __id: str
     __client: AsyncClient
     __queue: asyncio.Queue
     __response_queue: asyncio.Queue
@@ -33,16 +31,16 @@ class ScrapeRequestConsumer:
             client: AsyncClient,
             queue: asyncio.Queue,
             response_queue: asyncio.Queue,
-            sr_id: any = None
+            srpc_id: any = None
     ) -> None:
-        self.__id = str(uuid.uuid4()) if sr_id is None else str(sr_id)
+        super().__init__(srpc_id)
         self.__client = client
         self.__queue = queue
         self.__response_queue = response_queue
 
-    @property
+    @Consumer.id.getter
     def id(self) -> str:
-        return f'SR-{self.__id}'
+        return f'SRQC-{super().id}'
 
     @property
     def client(self):
@@ -55,18 +53,6 @@ class ScrapeRequestConsumer:
     @property
     def response_queue(self):
         return self.__response_queue
-
-    def info(self, msg: str) -> None:
-        logger.info(f'{self.id} | {msg}')
-
-    def debug(self, msg: str) -> None:
-        logger.debug(f'{self.id} | {msg}')
-
-    def error(self, msg: str) -> None:
-        logger.error(f'{self.id} | {msg}')
-
-    def warning(self, msg: str) -> None:
-        logger.warning(f'{self.id} | {msg}')
 
     async def __call__(self) -> None:
         self.debug(f'Starting Request Consumer {self.id}')
