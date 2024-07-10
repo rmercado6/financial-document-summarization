@@ -1,5 +1,7 @@
+import contextvars
 import logging
 import asyncio
+import time
 
 from httpx import AsyncClient
 
@@ -10,6 +12,9 @@ from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME
 
 
 logger = logging.getLogger(LOGGER_NAME)
+
+request_times = contextvars.ContextVar('request_times')
+request_times.set({'hl': time.time()})
 
 
 class ScrapeRequestConsumer(AsyncTask):
@@ -66,9 +71,17 @@ class ScrapeRequestConsumer(AsyncTask):
 
                 # Verify queue item is a compatible Request, remove if not
                 if type(scrape_request) is not ScrapeRequest:
-                    self.warning(f'Bad request from queue. {type(scrape_request)} object is not a ScrapeRequest object.')
+                    self.warning(f'Bad request from queue. '
+                                 f'{type(scrape_request)} object is not a ScrapeRequest object.')
                     self.queue.task_done()
                     continue
+
+                # Verify time between requests to respect politeness while crawling
+                _request_times = request_times.get()
+                while abs(time.time() - _request_times['hl']) < CONSUMER_SLEEP_TIME:
+                    await asyncio.sleep(0)
+                _request_times['hl'] = time.time()
+                request_times.set(_request_times)
 
                 # Execute http request
                 await scrape_request.send()
@@ -93,11 +106,9 @@ class ScrapeRequestConsumer(AsyncTask):
             finally:
                 if scrape_request is not None:
                     self.info(f'Finished processing request {scrape_request.url}. '
-                                f'Request queue: {self.queue.qsize()}; Response queue: {self.response_queue.qsize()}')
+                              f'Request queue: {self.queue.qsize()}; Response queue: {self.response_queue.qsize()}')
                 self.debug(f'Request Consumer Released, sleeping...')
 
                 # Sleep consumer for configured amount of time
                 await asyncio.sleep(CONSUMER_SLEEP_TIME)
                 self.debug('Resuming Request Consumer.')
-
-
