@@ -26,8 +26,6 @@ async def main():
 
     scrape_requests = hr_scrape_requests + ar_scrape_requests
 
-    # limited_requests = scrape_requests[:10]
-
     # Start the scraping process
     await scrape_request_handler(scrape_requests)
 

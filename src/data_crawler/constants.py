@@ -57,3 +57,6 @@ LOGGING_CONFIG = {
         'level': DEBUG
     }
 }
+
+# robots.txt url suffix
+ROBOTS_TXT_SUFFIX = '/robots.txt'
