@@ -27,10 +27,10 @@ HTTP_CLIENT_CONFIG = {
 
 
 # Async await Timeout limit
-ASYNC_AWAIT_TIMEOUT = 60
+ASYNC_AWAIT_TIMEOUT = 10
 
 # Sleep time between actions for every consumer
-CONSUMER_SLEEP_TIME = 10
+CONSUMER_SLEEP_TIME = 0
 
 # Number of ScrapeRequest Consumers
 NO_REQUEST_CONSUMERS = 10

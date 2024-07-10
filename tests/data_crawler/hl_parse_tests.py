@@ -4,7 +4,7 @@ import logging
 from unittest.mock import MagicMock
 
 from src.data_crawler.constants import LOGGING_CONFIG
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.parsers.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 
 

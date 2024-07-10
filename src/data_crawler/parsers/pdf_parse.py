@@ -6,7 +6,7 @@ from io import BytesIO
 from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 
 logger = getLogger(LOGGER_NAME)
 

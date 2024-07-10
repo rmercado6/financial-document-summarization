@@ -7,7 +7,7 @@ from datetime import datetime
 from markdownify import markdownify as md
 
 from src.data_crawler.constants import LOGGER_NAME
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.parsers.pdf_parse import parse_pdf_file
 
 
