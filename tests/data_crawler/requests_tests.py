@@ -11,7 +11,7 @@ from io import BytesIO
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
 from src.data_crawler.scrape_requests.handlers.scrape_request_handler import scrape_request_handler
 from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.scrape_requests.handlers.producers import scrape_request_producer
+from src.data_crawler.scrape_requests.handlers.producers import ScrapeRequestsProducer
 from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer
 from src.data_crawler.parsers.ar_parse import parse_firms_detail_page
 
@@ -38,7 +38,10 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_request_producer(self):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
-            producers = [asyncio.create_task(scrape_request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
+            producers = [
+                asyncio.create_task(ScrapeRequestsProducer(self.client, self.queue, self.requests, _)())
+                for _ in range(3)
+            ]
             await asyncio.gather(*producers)
 
             self.assertEqual(1, self.queue.qsize())

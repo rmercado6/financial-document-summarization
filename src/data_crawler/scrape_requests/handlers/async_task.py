@@ -1,13 +1,13 @@
 import logging
 import uuid
 
-from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME
+from src.data_crawler.constants import LOGGER_NAME
 
 
 logger = logging.getLogger(LOGGER_NAME)
 
 
-class Consumer:
+class AsyncTask:
 
     __id: str
 

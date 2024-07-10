@@ -5,14 +5,14 @@ from httpx import AsyncClient
 
 from src.data_crawler.scrape_requests import ScrapeRequest
 from src.data_crawler.scrape_requests.handlers import redirect_handler, success_handler
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler, Consumer
+from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler, AsyncTask
 from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME
 
 
 logger = logging.getLogger(LOGGER_NAME)
 
 
-class ScrapeRequestConsumer(Consumer):
+class ScrapeRequestConsumer(AsyncTask):
     """Scraping Request consumer
 
     Processes and handles requests through the scraping process.
@@ -38,7 +38,7 @@ class ScrapeRequestConsumer(Consumer):
         self.__queue = queue
         self.__response_queue = response_queue
 
-    @Consumer.id.getter
+    @AsyncTask.id.getter
     def id(self) -> str:
         return f'SRQC-{super().id}'
 

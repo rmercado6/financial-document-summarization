@@ -6,7 +6,7 @@ from pathlib import Path
 from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME, HTTP_CLIENT_CONFIG, NO_REQUEST_CONSUMERS, NO_RESPONSE_CONSUMERS
-from src.data_crawler.scrape_requests.handlers.producers import scrape_request_producer
+from src.data_crawler.scrape_requests.handlers.producers import ScrapeRequestsProducer
 from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer, ScrapeResponseConsumer
 
 
@@ -39,7 +39,7 @@ async def scrape_request_handler(
 
     # Producer and Consumer generation
     producers = [  # Build and publish in queue the ScrapeRequest for each stock through producers
-        asyncio.create_task(scrape_request_producer(client, queue, requests))
+        asyncio.create_task(ScrapeRequestsProducer(client, queue, requests, _)())
         for _ in range(3)
     ]
     logger.debug('Generated producers for ScrapeRequest object generation.')

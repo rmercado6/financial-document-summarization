@@ -2,11 +2,11 @@ import asyncio
 
 import jsonlines
 
-from src.data_crawler.scrape_requests.handlers.consumers import Consumer
+from src.data_crawler.scrape_requests.handlers.consumers import AsyncTask
 from src.data_crawler.constants import CONSUMER_SLEEP_TIME
 
 
-class ScrapeResponseConsumer(Consumer):
+class ScrapeResponseConsumer(AsyncTask):
 
     __response_queue: asyncio.Queue
 
@@ -14,7 +14,7 @@ class ScrapeResponseConsumer(Consumer):
         super().__init__(srpc_id)
         self.__response_queue = response_queue
 
-    @Consumer.id.getter
+    @AsyncTask.id.getter
     def id(self) -> str:
         return f'SRPC-{super().id}'
 
