@@ -1,3 +1,6 @@
+from langchain_core.documents.base import Document as LangchainDocument
+
+
 class Document:
 
     __title: str
@@ -13,7 +16,7 @@ class Document:
             title: str = None,
             ticker: str = None,
             year: str = None,
-            type: str = None,
+            document_type: str = None,
             content: str = None
     ):
         if jsonlines is not None:
@@ -26,7 +29,7 @@ class Document:
             self.__title = title
             self.__year = year
             self.__ticker = ticker
-            self.__type = type
+            self.__type = document_type
             self.__content = content
 
     @property
@@ -50,9 +53,8 @@ class Document:
         return self.__content
 
     @property
-    def chunks(self):
-        return self.__chunks
+    def langchain_document(self) -> LangchainDocument:
+        return LangchainDocument(page_content=self.__content)
 
-    @chunks.setter
-    def chunks(self, value):
-        self.__chunks = value
+    def get_chunks(self, text_splitter):
+        return text_splitter.split_documents([self.langchain_document])

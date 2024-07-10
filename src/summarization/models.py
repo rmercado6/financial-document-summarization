@@ -1,6 +1,6 @@
 import os
 
-from langchain_community.llms import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEndpoint
 
 
@@ -35,7 +35,7 @@ def load_openai_model(model_name):
     Returns:
         llm: the langauge model on which queries/summarsation would be done on
     """
-    llm = OpenAI(
+    llm = ChatOpenAI(
         model_name=model_name,
         openai_api_key=os.environ["OPENAI_API_KEY"]
     )
