@@ -7,7 +7,7 @@ from httpx import AsyncClient
 
 from src.data_crawler.constants import LOGGER_NAME, HTTP_CLIENT_CONFIG, NO_REQUEST_CONSUMERS, NO_RESPONSE_CONSUMERS
 from src.data_crawler.scrape_requests.handlers.producers import scrape_request_producer
-from src.data_crawler.scrape_requests.handlers.consumers import scrape_request_consumer, scrape_response_consumer
+from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer, scrape_response_consumer
 
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -45,7 +45,7 @@ async def scrape_request_handler(
     logger.debug('Generated producers for ScrapeRequest object generation.')
 
     request_consumers = [  # Generate consumers to process the ScrapeRequest objects
-        asyncio.create_task(scrape_request_consumer(client, queue, response_queue))
+        asyncio.create_task(ScrapeRequestConsumer(client, queue, response_queue, _)())
         for _ in range(NO_REQUEST_CONSUMERS)
     ]
     logger.debug('Generated consumers for ScrapeRequest object processing.')
@@ -54,7 +54,7 @@ async def scrape_request_handler(
         asyncio.create_task(scrape_response_consumer(response_queue))
         for _ in range(NO_RESPONSE_CONSUMERS)
     ]
-    logger.debug('Generated consumers for ScrapeRequest object processing.')
+    logger.debug('Generated consumers for ScrapeResponse object processing.')
 
     # Wait for producers and consumers to finish their processes
     await asyncio.gather(*producers)  # wait for producers to finish
