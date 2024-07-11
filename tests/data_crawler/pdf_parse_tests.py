@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 from io import BytesIO
 
 from src.data_crawler.constants import LOGGING_CONFIG
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.pdf_parse import parse_pdf_file
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.parsers.pdf_parse import parse_pdf_file
 
 
 # Set up Logger
@@ -48,16 +48,15 @@ class PdfParseTestCase(unittest.TestCase):
 
     def test_parse_financial_reports_pdfs(self) -> None:
         """Test the parsing of the financial reports PDFs"""
-        response: ScrapeResponse = parse_pdf_file(
+        metadata, data, further_requests = parse_pdf_file(
             self.financial_reports_pdf_request_mock
         )
-        self.assertTrue(type(response) is ScrapeResponse)
-        self.assertTrue(type(response.data) is bytes)
-        self.assertIsNone(response.further_requests)
-        self.assertTrue(type(response.metadata) is dict)
-        self.assertTrue('src' in response.metadata.keys())
-        self.assertTrue('data_type' in response.metadata.keys())
-        self.assertTrue('share' in response.metadata.keys())
+        self.assertTrue(type(data) is bytes)
+        self.assertIsNone(further_requests)
+        self.assertTrue(type(metadata) is dict)
+        self.assertTrue('src' in metadata.keys())
+        self.assertTrue('data_type' in metadata.keys())
+        self.assertTrue('share' in metadata.keys())
 
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20}')

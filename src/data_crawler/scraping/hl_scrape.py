@@ -3,7 +3,7 @@ import asyncio
 from logging import getLogger
 from httpx import AsyncClient
 
-from src.data_crawler.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
+from src.data_crawler.parsers.hl_parse import parse_stocks_table, parse_financial_statements_and_reports
 from src.data_crawler.constants import DATA_SRC_URLS, HTTP_CLIENT_CONFIG, LOGGER_NAME
 
 

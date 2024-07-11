@@ -1,11 +1,10 @@
 import unittest
 import httpx
-import pypdf
 import logging
 
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 
-from src.data_crawler.hl_scrape import scrape_hl_index_stocks_table
+from src.data_crawler.scraping.hl_scrape import scrape_hl_index_stocks_table
 from src.data_crawler.constants import LOGGING_CONFIG
 
 

@@ -27,16 +27,16 @@ HTTP_CLIENT_CONFIG = {
 
 
 # Async await Timeout limit
-ASYNC_AWAIT_TIMEOUT = 60
+ASYNC_AWAIT_TIMEOUT = 10
 
 # Sleep time between actions for every consumer
-CONSUMER_SLEEP_TIME = 10
+CONSUMER_SLEEP_TIME = 0
 
 # Number of ScrapeRequest Consumers
 NO_REQUEST_CONSUMERS = 10
 
 # Number of ScrapeResponse Consumers
-NO_RESPONSE_CONSUMERS = 10
+NO_RESPONSE_CONSUMERS = 15
 
 # Maximum number of request attempts
 MAX_RETRIES = 3
@@ -57,3 +57,6 @@ LOGGING_CONFIG = {
         'level': DEBUG
     }
 }
+
+# robots.txt url suffix
+ROBOTS_TXT_SUFFIX = '/robots.txt'

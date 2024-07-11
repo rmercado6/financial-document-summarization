@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 from httpx import Client
 
 from src.data_crawler.constants import LOGGING_CONFIG
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_page
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.parsers.ar_parse import parse_stocks_table, parse_firms_detail_page
 
 
 # Set up Logger
@@ -52,8 +52,8 @@ class ARParseFirmsDetailPageTest(unittest.TestCase):
             firm_detail_page_response_mock = _.read()
 
         # Financial Statements Page Request Mock
-        self.financial_statements_page_request_mock: ScrapeRequest = MagicMock(ScrapeRequest, metadata={})
-        self.financial_statements_page_request_mock.response.text = firm_detail_page_response_mock
+        self.financial_statements_page_request_mock: ScrapeResponse = MagicMock(ScrapeRequest, metadata={})
+        self.financial_statements_page_request_mock.request.response.text = firm_detail_page_response_mock
         self.financial_statements_page_request_mock.request.url = 'http://test.url'
 
         # HTTP Client Mock
@@ -63,7 +63,7 @@ class ARParseFirmsDetailPageTest(unittest.TestCase):
         """Test the parsing of the firms detail page HTML"""
 
         # Call the method
-        response = parse_firms_detail_page(
+        metadata, data, further_requests = parse_firms_detail_page(
             self.financial_statements_page_request_mock,
             client=self.http_client_mock
         )
@@ -71,9 +71,8 @@ class ARParseFirmsDetailPageTest(unittest.TestCase):
         # Assert
         self.http_client_mock.request.assert_called()
         self.assertTrue(10, self.http_client_mock.request.call_count)
-        self.assertTrue(type(response) is ScrapeResponse)
-        self.assertTrue(len(response.further_requests) == 10)
-        [self.assertTrue(type(r) is ScrapeRequest) for r in response.further_requests]
+        self.assertTrue(len(further_requests) == 10)
+        [self.assertTrue(type(r) is ScrapeRequest) for r in further_requests]
 
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {inspect.getframeinfo(inspect.currentframe()).function} case... {"-" * 20}')

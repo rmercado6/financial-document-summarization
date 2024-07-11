@@ -35,10 +35,12 @@ langchain==0.2.5
 langchain-community==0.2.5
 langchain-core==0.2.10
 langchain-huggingface==0.0.3
+langchain-openai==0.1.14
 langchain-text-splitters==0.2.2
 langcodes==3.4.0
 langsmith==0.1.82
 language_data==1.2.0
+load-dotenv==0.1.0
 lxml==5.2.2
 marisa-trie==1.2.0
 markdown-it-py==3.0.0
@@ -53,7 +55,7 @@ murmurhash==1.0.10
 mypy-extensions==1.0.0
 networkx==3.3
 numpy==1.26.4
-openai==0.28.0
+openai==1.35.10
 orjson==3.10.5
 packaging==24.0
 pandas==2.2.2
@@ -71,6 +73,7 @@ pypdf==4.2.0
 pytest==8.2.1
 pytest-asyncio==0.23.7
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 pytz==2024.1
 PyYAML==6.0.1
 regex==2024.5.15
