@@ -9,10 +9,11 @@ from httpx import AsyncClient
 from io import BytesIO
 
 from src.data_crawler.constants import ASYNC_AWAIT_TIMEOUT, LOGGING_CONFIG
-from src.data_crawler.scrape_requests.handlers import scrape_request_producer, scrape_request_consumer, \
-    scrape_request_handler
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.ar_parse import parse_firms_detail_page
+from src.data_crawler.scrape_requests.handlers.scrape_request_handler import scrape_request_handler
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.handlers.producers import ScrapeRequestsProducer
+from src.data_crawler.scrape_requests.handlers.consumers import ScrapeRequestConsumer
+from src.data_crawler.parsers.ar_parse import parse_firms_detail_page
 
 # Set up Logger
 logging.basicConfig(**LOGGING_CONFIG['testing'])
@@ -37,7 +38,10 @@ class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_request_producer(self):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
-            producers = [asyncio.create_task(scrape_request_producer(self.client, self.queue, self.requests)) for _ in range(3)]
+            producers = [
+                asyncio.create_task(ScrapeRequestsProducer(self.client, self.queue, self.requests, _)())
+                for _ in range(3)
+            ]
             await asyncio.gather(*producers)
 
             self.assertEqual(1, self.queue.qsize())
@@ -81,15 +85,16 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=self.client.request(**self.request_params),
-            consumer=lambda x, client: ScrapeResponse({}, '', [])
+            consumer=lambda x, client: tuple([{}, '', []])
         )
 
     async def test_request_consumer(self):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
+            # Error esta en obtener el delay pues no hace peticiones http; hay que hace mock de esos metodos
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 
@@ -135,7 +140,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=request,
-            consumer=lambda x, client: ScrapeResponse({}, '', [])
+            consumer=lambda x, client: tuple([{}, '', []])
         )
 
     async def test_request_consumer_with_redirect(self):
@@ -143,7 +148,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 
@@ -177,7 +182,7 @@ class ConsumerRequestTypeExceptionTest(unittest.IsolatedAsyncioTestCase):
             await self.queue.put(self.sample_request)
 
             self.consumers = [
-                asyncio.create_task(scrape_request_consumer(self.client, self.queue, self.responses))
+                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
             ]
 
@@ -231,14 +236,15 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         ]
 
         # Call function
-        await scrape_request_handler([
-            {
-                'metadata': {},
-                'method': 'GET',
-                'url': '',
-                'consumer': parse_firms_detail_page
-            }
-        ])
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            await scrape_request_handler([
+                {
+                    'metadata': {},
+                    'method': 'GET',
+                    'url': '',
+                    'consumer': parse_firms_detail_page
+                }
+            ])
 
         # Assert
         self.assertNoLogs(logging.getLogger('asyncio'), logging.ERROR)

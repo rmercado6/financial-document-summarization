@@ -2,7 +2,7 @@ from logging import getLogger
 from httpx import Client
 
 from src.data_crawler.constants import LOGGER_NAME, HTTP_CLIENT_CONFIG, DATA_SRC_URLS
-from src.data_crawler.ar_parse import parse_stocks_table, parse_firms_detail_page
+from src.data_crawler.parsers.ar_parse import parse_stocks_table, parse_firms_detail_page
 
 
 logger = getLogger(LOGGER_NAME)

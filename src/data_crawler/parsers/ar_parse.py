@@ -1,12 +1,11 @@
-import logging
 from logging import getLogger
 
 from httpx import AsyncClient
 from lxml import etree
 
 from src.data_crawler.constants import LOGGER_NAME, DATA_SRC_URLS
-from src.data_crawler.scrape_requests.requests import ScrapeRequest, ScrapeResponse
-from src.data_crawler.pdf_parse import parse_pdf_file
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.parsers.pdf_parse import parse_pdf_file
 
 
 logger = getLogger(LOGGER_NAME)
@@ -34,19 +33,19 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
 
 
 def parse_firms_detail_page(
-        request: ScrapeRequest,
+        scrape_response: ScrapeResponse,
         client: AsyncClient or None = None
-) -> ScrapeResponse:
+) -> tuple[dict, str or bytes, list[ScrapeRequest] or None]:
     """Functon to parse the firm's detail page to get the financial reports pdf download links
 
-    :param request: ScrapeRequest request object.
+    :param scrape_response: ScrapeRequest request object.
     :param client: Httpx AsyncClient HTTP Client to manage HTTP requests.
     :return: None
     """
-    logger.debug(f'Starting AR\'s firms detail parsing for {request.url}...')
+    logger.debug(f'Starting AR\'s firms detail parsing for {scrape_response.url}...')
 
     parser = etree.HTMLParser()
-    selector = etree.fromstring(request.response.text, parser)
+    selector = etree.fromstring(scrape_response.request.response.text, parser)
 
     # Gather share information
     share = {
@@ -55,13 +54,13 @@ def parse_firms_detail_page(
         'identifier': selector.xpath("//span[@class='ticker_name']/text()")[0],
     }
 
-    logger.debug(f'Gathered stock metadata for {share["ticker"]} from {request.url}.')
+    logger.debug(f'Gathered stock metadata for {share["ticker"]} from {scrape_response.url}.')
 
     # Gather annual and interim reports download urls & Build new requests
     requests = []
     for div in selector.xpath("//div[@class='archived_report_content_block']/ul/li/div"):
         url = DATA_SRC_URLS['ar-base'] + div.xpath("./span[@class='btn_archived download']/a/@href")[0]
-        m = request.metadata.copy()
+        m = scrape_response.metadata.copy()
         m.update({
             'data_type': 'annual_report',
             'year': div.xpath("./span[@class='heading']/text()")[0].split(' ')[0],
@@ -82,12 +81,12 @@ def parse_firms_detail_page(
         )
 
     logger.debug(f'Built requests for annual and interim reports download urls for {share["ticker"]} '
-                 f'from {request.url}.')
+                 f'from {scrape_response.url}.')
 
     # Build response metadata
-    m = request.metadata.copy()
+    m = scrape_response.metadata.copy()
     m.update({
-        'src': request.url,
+        'src': scrape_response.url,
         'data_type': 'None',
         'url_append': None,
         'share': share,
@@ -97,5 +96,5 @@ def parse_firms_detail_page(
     logger.info(f'Scraped {share["ticker"]}\'s AR detail page.')
 
     # return data
-    return ScrapeResponse(m, None, requests)
+    return m, None, requests
 

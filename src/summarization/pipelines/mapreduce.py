@@ -2,7 +2,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains.summarize import load_summarize_chain
 
 
-# Refine prompts
+# Map-Reduce prompts
 map_prompt_template = """
                       Write a summary of this chunk of text that includes the main points and any important details.
                       {text}
@@ -24,7 +24,7 @@ def map_reduce(model, input_documents: list, return_intermediate_steps: bool = F
     :arg input_documents: list of the pages on which summarization would work on
     :arg return_intermediate_steps: if True, the intermediate steps will be included in the response
 
-    :return summarised output for the documents
+    :return: summarised output for the documents
     """
     map_prompt = PromptTemplate(template=map_prompt_template, input_variables=["text"])
     combine_prompt = PromptTemplate(template=combine_prompt_template, input_variables=["text"])

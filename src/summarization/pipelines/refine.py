@@ -1,6 +1,7 @@
 from langchain_core.prompts import PromptTemplate
 from langchain.chains.summarize import load_summarize_chain
 
+
 # Refine prompts
 question_prompt_template = """
                   Please provide a summary of the following text.
@@ -24,7 +25,7 @@ def refine(model, input_documents: list, return_intermediate_steps: bool = False
     :arg input_documents: list of the pages on which summarization would work on
     :arg return_intermediate_steps: if True, the intermediate steps will be included in the response
 
-    :return summarised output for the documents
+    :return: summarised output for the documents
     """
     question_prompt = PromptTemplate(template=question_prompt_template, input_variables=["text"])
     refine_prompt = PromptTemplate(template=refine_prompt_template, input_variables=["text"])
