@@ -12,6 +12,7 @@ class ScrapeResponse:
     __metadata: dict
     __data: str or bytes
     __further_requests: list[ScrapeRequest] or None
+    __reset_count: int
 
     def __init__(self, scrape_request: ScrapeRequest):
         self.__request = scrape_request
@@ -21,6 +22,7 @@ class ScrapeResponse:
             self.__metadata['method'] = 'GET'
         self.__data = None
         self.__further_requests = None
+        self.__reset_count = 0
 
     @property
     def request(self):
@@ -84,6 +86,10 @@ class ScrapeResponse:
     @property
     def consumer(self):
         return self.request.consumer
+
+    def reset(self, client: AsyncClient) -> int:
+        self.__reset_count += 1
+        return self.__reset_count
 
     def consume(self, client: AsyncClient):
         metadata, data, further_requests = self.consumer(self, client)

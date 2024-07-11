@@ -107,7 +107,7 @@ class ScrapeRequestConsumer(AsyncTask):
 
             # Handle Exceptions if any
             except Exception as e:
-                await consumer_exception_handler(e, scrape_request, self.task_queue, self.client)
+                await consumer_exception_handler(e, scrape_request, self.task_queue, self.response_queue, self.client)
 
             finally:
                 if scrape_request is not None:
