@@ -36,7 +36,7 @@ CONSUMER_SLEEP_TIME = 0
 NO_REQUEST_CONSUMERS = 10
 
 # Number of ScrapeResponse Consumers
-NO_RESPONSE_CONSUMERS = 10
+NO_RESPONSE_CONSUMERS = 15
 
 # Maximum number of request attempts
 MAX_RETRIES = 3
