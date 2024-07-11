@@ -3,7 +3,7 @@ import asyncio
 
 import httpx
 
-from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests import ScrapeResponse
 from src.data_crawler.constants import LOGGER_NAME
 
 
@@ -26,9 +26,9 @@ async def success_handler(
     logger.debug(f'Successful request from queue: {response.url}. '
                  f'Sending request to consumer function {response.consumer.__name__}.')
 
-    # response: ScrapeResponse = response.consumer(response, client=client)
-
+    response.consume(client=client)
     logger.debug(f'Got response from consumer function.')
+
     await response_queue.put(response)
     if response.further_requests:
         logger.debug(f'Adding {len(response.further_requests)} requests to request queue with '

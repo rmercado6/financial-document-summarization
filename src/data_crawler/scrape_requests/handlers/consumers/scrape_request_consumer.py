@@ -74,6 +74,7 @@ class ScrapeRequestConsumer(AsyncTask):
         while True:
             scrape_request: ScrapeRequest or None = None
             try:
+                self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 # Get scrape request from queue
                 scrape_request = await self.task_queue.get()
                 self.debug(f'Got request from task queue[{self.task_queue.qsize()}]: {scrape_request}')

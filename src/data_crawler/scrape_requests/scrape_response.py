@@ -1,6 +1,16 @@
+import asyncio
+import logging
+from io import BytesIO
+
+import pymupdf4llm
 from httpx import AsyncClient
+from pymupdf import pymupdf
 
 from .scrape_request import ScrapeRequest
+from src.data_crawler.constants import LOGGER_NAME
+
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class ScrapeResponse:
@@ -87,6 +97,21 @@ class ScrapeResponse:
     def consumer(self):
         return self.request.consumer
 
+    @property
+    async def document(self):
+        await asyncio.sleep(0)
+        if not self.data and self.content and self.consumer.__name__ == 'parse_pdf_file':
+            logger.debug(f'Parsing MD for '
+                         f'{self.metadata["share"]["title"]} : {self.metadata["data_type"]} {self.metadata["year"]}')
+            byte_stream: BytesIO = BytesIO(self.content)
+            document: pymupdf.Document = pymupdf.Document(stream=byte_stream)
+            return pymupdf4llm.to_markdown(document)
+        if type(self.data) is str:
+            return self.data
+        elif type(self.data) is bytes:
+            return self.data.decode('utf-8')
+        return None
+
     def reset(self, client: AsyncClient) -> int:
         self.__reset_count += 1
         return self.__reset_count
@@ -97,11 +122,12 @@ class ScrapeResponse:
         self.__data = data
         self.__further_requests = further_requests
 
-    def jsonl(self) -> dict:
+    async def jsonl(self) -> dict:
+        await asyncio.sleep(0)
         return {
             'title': self.metadata['share']['title'],
             'ticker': self.metadata['share']['ticker'],
             'year': self.metadata['year'] if 'year' in self.metadata.keys() else None,
             'document_type': self.metadata['data_type'],
-            'doc': self.data if type(self.data) is str else self.data.decode('utf-8'),
+            'doc': await self.document,
         }

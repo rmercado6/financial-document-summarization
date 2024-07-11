@@ -1,4 +1,5 @@
 import asyncio
+
 import jsonlines
 
 from asyncio import Queue
@@ -8,6 +9,9 @@ from src.data_crawler.scrape_requests import ScrapeResponse
 from src.data_crawler.scrape_requests.handlers import AsyncTask
 from src.data_crawler.constants import CONSUMER_SLEEP_TIME
 from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
+
+
+writer_lock = asyncio.Lock()
 
 
 class ScrapeResponseConsumer(AsyncTask):
@@ -28,6 +32,7 @@ class ScrapeResponseConsumer(AsyncTask):
         scrape_response: ScrapeResponse or None = None
         while True:
             try:
+                self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 scrape_response = await self.response_queue.get()
                 self.debug(f'Got response from queue: {scrape_response}')
 
@@ -38,9 +43,12 @@ class ScrapeResponseConsumer(AsyncTask):
                     self.task_queue.task_done()
                     continue
 
-                if scrape_response.data is not None:
-                    with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
-                        _.write(scrape_response.jsonl())
+                tasks = await asyncio.gather(scrape_response.jsonl())
+                jsonline = tasks[0]
+                if jsonline["doc"] is not None:
+                    async with writer_lock:
+                        with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                            _.write(jsonline)
 
                 self.response_queue.task_done()
                 self.debug('Task removed from queue.')
