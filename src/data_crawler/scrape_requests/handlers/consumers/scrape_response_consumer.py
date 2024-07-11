@@ -1,46 +1,46 @@
 import asyncio
-
 import jsonlines
 
-from src.data_crawler.scrape_requests.handlers.consumers import AsyncTask
+from asyncio import Queue
+from httpx import AsyncClient
+
+from src.data_crawler.scrape_requests import ScrapeResponse
+from src.data_crawler.scrape_requests.handlers import AsyncTask, redirect_handler, success_handler
 from src.data_crawler.constants import CONSUMER_SLEEP_TIME
 
 
 class ScrapeResponseConsumer(AsyncTask):
 
-    __response_queue: asyncio.Queue
-
-    def __init__(self, response_queue: asyncio.Queue, srpc_id: any = None):
-        super().__init__(srpc_id)
-        self.__response_queue = response_queue
+    def __init__(self, client: AsyncClient, task_queue: Queue, response_queue: Queue, task_id: any = None):
+        super().__init__(client, task_queue, response_queue, task_id)
 
     @AsyncTask.id.getter
     def id(self) -> str:
         return f'SRPC-{super().id}'
 
-    @property
-    def response_queue(self):
-        return self.__response_queue
-
     async def __call__(self) -> None:
         """Scraping Response consumer
 
-        :param response_queue: asyncio.Queue    Scrape Response queue
         :return: None
         """
         self.debug(f'Starting Response Consumer')
         while True:
-            __queue_item = await self.response_queue.get()
-            self.debug(f'Got response from queue: {__queue_item}')
+            scrape_response: ScrapeResponse = await self.response_queue.get()
+            self.debug(f'Got response from queue: {scrape_response}')
 
-            if __queue_item.data is not None:
+            # Verify task queue item is a compatible Request, remove if not
+            if type(scrape_response) is not ScrapeResponse:
+                self.warning(f'Bad request from task queue. '
+                             f'{type(scrape_response)} object is not a ScrapeResponse object.')
+                self.task_queue.task_done()
+                continue
+
+            if scrape_response.data is not None:
                 with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
-                    _.write(__queue_item.jsonl())
+                    _.write(scrape_response.jsonl())
 
             self.response_queue.task_done()
             self.debug('Task removed from queue.')
-            self.info('Wrote response to file.')
+            # self.info('Wrote response to file.')
 
-            self.debug(f'Response Consumer Idle. Sleeping...')
             await asyncio.sleep(CONSUMER_SLEEP_TIME)
-            self.debug('Resuming Response Consumer.')

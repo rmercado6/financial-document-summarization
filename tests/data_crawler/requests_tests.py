@@ -85,13 +85,14 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=self.client.request(**self.request_params),
-            consumer=lambda x, client: ScrapeResponse({}, '', [])
+            consumer=lambda x, client: tuple([{}, '', []])
         )
 
     async def test_request_consumer(self):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
+            # Error esta en obtener el delay pues no hace peticiones http; hay que hace mock de esos metodos
             self.consumers = [
                 asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
                 for _ in range(10)
@@ -139,7 +140,7 @@ class ConsumerRedirectTest(unittest.IsolatedAsyncioTestCase):
                 'url_append': '/financial-statements-and-reports'
             },
             request=request,
-            consumer=lambda x, client: ScrapeResponse({}, '', [])
+            consumer=lambda x, client: tuple([{}, '', []])
         )
 
     async def test_request_consumer_with_redirect(self):
@@ -235,14 +236,15 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         ]
 
         # Call function
-        await scrape_request_handler([
-            {
-                'metadata': {},
-                'method': 'GET',
-                'url': '',
-                'consumer': parse_firms_detail_page
-            }
-        ])
+        async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
+            await scrape_request_handler([
+                {
+                    'metadata': {},
+                    'method': 'GET',
+                    'url': '',
+                    'consumer': parse_firms_detail_page
+                }
+            ])
 
         # Assert
         self.assertNoLogs(logging.getLogger('asyncio'), logging.ERROR)

@@ -6,9 +6,9 @@ import time
 from httpx import AsyncClient, URL
 from urllib.robotparser import RobotFileParser
 
-from src.data_crawler.scrape_requests import ScrapeRequest
-from src.data_crawler.scrape_requests.handlers import redirect_handler, success_handler
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler, AsyncTask
+from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
+from src.data_crawler.scrape_requests.handlers import redirect_handler, success_handler, AsyncTask
+from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
 from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME, ROBOTS_TXT_SUFFIX
 
 
@@ -27,41 +27,22 @@ class ScrapeRequestConsumer(AsyncTask):
     Processes and handles requests through the scraping process.
 
     :param client: AsyncClient  HTTP Client for managing HTTP requests
-    :param queue: asyncio.Queue Scrape Request queue
+    :param task_queue: asyncio.Queue Scrape Request queue
     :param response_queue: asyncio.Queue    Scrape Response queue
     """
-
-    __client: AsyncClient
-    __queue: asyncio.Queue
-    __response_queue: asyncio.Queue
 
     def __init__(
             self,
             client: AsyncClient,
-            queue: asyncio.Queue,
+            task_queue: asyncio.Queue,
             response_queue: asyncio.Queue,
-            srpc_id: any = None
+            task_id: any = None
     ) -> None:
-        super().__init__(srpc_id)
-        self.__client = client
-        self.__queue = queue
-        self.__response_queue = response_queue
+        super().__init__(client, task_queue, response_queue, task_id)
 
     @AsyncTask.id.getter
     def id(self) -> str:
         return f'SRQC-{super().id}'
-
-    @property
-    def client(self):
-        return self.__client
-
-    @property
-    def queue(self):
-        return self.__queue
-
-    @property
-    def response_queue(self):
-        return self.__response_queue
 
     def get_request_delay(self, url: URL):
         self.debug(f'Getting request delay for {url}')
@@ -94,15 +75,14 @@ class ScrapeRequestConsumer(AsyncTask):
             scrape_request: ScrapeRequest or None = None
             try:
                 # Get scrape request from queue
-                self.debug(f'Request Consumer looking on queue for response to handle. qsize: {self.queue.qsize()}')
-                scrape_request = await self.queue.get()
-                self.debug(f'Got request from queue[{self.queue.qsize()}]: {scrape_request}')
+                scrape_request = await self.task_queue.get()
+                self.debug(f'Got request from task queue[{self.task_queue.qsize()}]: {scrape_request}')
 
-                # Verify queue item is a compatible Request, remove if not
+                # Verify task queue item is a compatible Request, remove if not
                 if type(scrape_request) is not ScrapeRequest:
-                    self.warning(f'Bad request from queue. '
+                    self.warning(f'Bad request from task queue. '
                                  f'{type(scrape_request)} object is not a ScrapeRequest object.')
-                    self.queue.task_done()
+                    self.task_queue.task_done()
                     continue
 
                 # Verify time between requests to respect politeness while crawling
@@ -111,27 +91,28 @@ class ScrapeRequestConsumer(AsyncTask):
                 # Execute http request
                 await scrape_request.send()
 
+                response = ScrapeResponse(scrape_request)
                 # Process response
-                self.info(f'Processing Scrape Request {scrape_request.url}')
-                if scrape_request.response.is_redirect:     # Process redirected responses
-                    await redirect_handler(scrape_request, self.queue, self.client)
-                elif scrape_request.response.is_success:    # Process successful requests
-                    await success_handler(scrape_request, self.queue, self.response_queue, self.client)
+                self.info(f'Processing Scrape Response {response.url}')
+                if response.is_redirect:     # Process redirected responses
+                    await redirect_handler(response, self.task_queue, self.client)
+                elif response.is_success:    # Process successful requests
+                    await success_handler(response, self.task_queue, self.response_queue, self.client)
                 else:
-                    raise Exception(f'Unknown status code {scrape_request.response.status}')
+                    raise Exception(f'Unknown status code {response.status}')
 
                 # Remove processed item from queue
-                self.queue.task_done()
+                self.task_queue.task_done()
                 self.debug('Task removed from queue.')
 
             # Handle Exceptions if any
             except Exception as e:
-                await consumer_exception_handler(e, scrape_request, self.queue, self.client)
+                await consumer_exception_handler(e, scrape_request, self.task_queue, self.client)
 
             finally:
                 if scrape_request is not None:
                     self.info(f'Finished processing request {scrape_request.url}. '
-                              f'Request queue: {self.queue.qsize()}; Response queue: {self.response_queue.qsize()}')
+                              f'Request queue: {self.task_queue.qsize()}; Response queue: {self.response_queue.qsize()}')
                 self.debug(f'Request Consumer Released, sleeping...')
 
                 # Sleep consumer for configured amount of time

@@ -22,8 +22,6 @@ class ScrapeRequestsProducer(AsyncTask):
     :return: None
     """
 
-    __client: AsyncClient
-    __queue: asyncio.Queue
     __request: list[dict[str, any]]
 
     def __init__(
@@ -31,24 +29,14 @@ class ScrapeRequestsProducer(AsyncTask):
             client: AsyncClient,
             queue: asyncio.Queue,
             requests: list[dict[str, any]],
-            srqp_id: any = None
+            task_id: any = None
     ):
-        super().__init__(srqp_id)
-        self.__client = client
-        self.__queue = queue
+        super().__init__(client, queue, None, task_id)
         self.__requests = requests
 
     @AsyncTask.id.getter
     def id(self):
         return f'SRQP-{super().id}'
-
-    @property
-    def client(self):
-        return self.__client
-
-    @property
-    def queue(self):
-        return self.__queue
 
     @property
     def requests(self):
@@ -60,7 +48,7 @@ class ScrapeRequestsProducer(AsyncTask):
             url = r['url'] + r['metadata']['url_append'] if 'url_append' in r['metadata'].keys() else r['url']
             self.debug(f"Producing {r['method']} request: {r['url']}")
             r['metadata']['url'] = url
-            await self.queue.put(
+            await self.task_queue.put(
                 ScrapeRequest(
                     metadata=r['metadata'],
                     request=self.client.request(method=r['method'], url=url),

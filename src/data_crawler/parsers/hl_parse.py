@@ -39,7 +39,7 @@ def parse_stocks_table(response_text: str) -> dict[str, str]:
 def parse_financial_statements_and_reports(
         request: ScrapeRequest,
         client: AsyncClient or None = None
-) -> ScrapeResponse:
+) -> tuple[dict, str or bytes, list[ScrapeRequest] or None]:
     """Functon to parse the financial statements table contents and obtain the financial reports pdf download links
 
     :param request: ScrapeRequest Scraping requests.
@@ -114,7 +114,7 @@ def parse_financial_statements_and_reports(
     logger.info(f'Scraped {share["ticker"]}\'s financial statement and reports table.')
 
     # return data
-    return ScrapeResponse(m, data, requests)
+    return m, data, requests
 
 
 

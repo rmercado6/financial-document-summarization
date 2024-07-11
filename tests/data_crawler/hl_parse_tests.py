@@ -35,29 +35,28 @@ class HlParseFinancialStatementsAndReportsTestCase(unittest.TestCase):
 
     def test_parse_financial_statements_and_reports(self) -> None:
         """Test the parsing of the financial statements and reports HTML"""
-        response: ScrapeResponse = parse_financial_statements_and_reports(
+        metadata, data, further_requests = parse_financial_statements_and_reports(
             self.financial_statements_page_request_mock,
             client=self.http_client_mock
         )
-        self.assertTrue(type(response) is ScrapeResponse)
-        self.assertTrue(type(response.metadata) is dict)
-        self.assertTrue(type(response.data) is bytes)
-        self.assertTrue(type(response.further_requests) is list)
-        self.assertGreaterEqual(len(response.metadata.keys()), 4)
+        self.assertTrue(type(metadata) is dict)
+        self.assertTrue(type(data) is bytes)
+        self.assertTrue(type(further_requests) is list)
+        self.assertGreaterEqual(len(metadata.keys()), 4)
 
         # Assert the inclusion of information source in response
-        self.assertTrue('src' in response.metadata.keys())
-        self.assertEqual('http://test.url', response.metadata['src'])
+        self.assertTrue('src' in metadata.keys())
+        self.assertEqual('http://test.url', metadata['src'])
 
         # Assert the inclusion of the scraped share information
-        self.assertTrue('share' in response.metadata.keys())
-        self.assertTrue('title' in response.metadata['share'].keys())
-        self.assertTrue('ticker' in response.metadata['share'].keys())
-        self.assertTrue('identifier' in response.metadata['share'].keys())
+        self.assertTrue('share' in metadata.keys())
+        self.assertTrue('title' in metadata['share'].keys())
+        self.assertTrue('ticker' in metadata['share'].keys())
+        self.assertTrue('identifier' in metadata['share'].keys())
 
         # Assert the extraction of PDF report urls
-        self.assertGreaterEqual(len(response.further_requests), 2)
-        for r in response.further_requests:
+        self.assertGreaterEqual(len(further_requests), 2)
+        for r in further_requests:
             self.assertTrue(type(r) is ScrapeRequest)
             self.assertTrue('url_append' in r.metadata.keys())
             self.assertTrue('data_type' in r.metadata.keys())

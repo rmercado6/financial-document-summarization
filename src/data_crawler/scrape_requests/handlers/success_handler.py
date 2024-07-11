@@ -11,22 +11,22 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 async def success_handler(
-        scrape_request: ScrapeRequest,
+        response: ScrapeResponse,
         queue: asyncio.Queue,
         response_queue: asyncio.Queue,
         client: httpx.AsyncClient
 ) -> None:
     """Scrape http successful request response handler
 
-    :param scrape_request: ScrapeRequest item
+    :param response: ScrapeRequest item
     :param queue: asyncio.Queue Scrape Request queue
     :param response_queue: asyncio.Queue Scrape Response queue
     :param client: AsyncClient HTTP Client for managing HTTP requests
     """
-    logger.debug(f'Successful request from queue: {scrape_request.url}. '
-                 f'Sending request to consumer function {scrape_request.consumer.__name__}.')
+    logger.debug(f'Successful request from queue: {response.url}. '
+                 f'Sending request to consumer function {response.consumer.__name__}.')
 
-    response: ScrapeResponse = scrape_request.consumer(scrape_request, client=client)
+    # response: ScrapeResponse = response.consumer(response, client=client)
 
     logger.debug(f'Got response from consumer function.')
     await response_queue.put(response)

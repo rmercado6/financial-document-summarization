@@ -11,7 +11,10 @@ from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 logger = getLogger(LOGGER_NAME)
 
 
-def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -> ScrapeResponse:
+def parse_pdf_file(
+        request: ScrapeRequest,
+        client: AsyncClient or None = None
+) -> tuple[dict, str or bytes, list[ScrapeRequest] or None]:
     """Parse financial report PDF file responses into plain text
 
     :param request: Request data-crawler request containing the request info
@@ -20,14 +23,15 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
     """
     data: bytes = b''
     metadata: dict = request.metadata.copy()
-    byte_stream: BytesIO = BytesIO(request.response.content)
-    document: pymupdf.Document = pymupdf.Document(stream=byte_stream)
+    # byte_stream: BytesIO = BytesIO(request.response.content)
+    # document: pymupdf.Document = pymupdf.Document(stream=byte_stream)
 
     try:
         logger.debug(f'Starting {request.metadata["share"]["ticker"]}\'s financial reports PDF file '
                      f'\'{request.metadata["data_type"]}\' download process...')
 
-        md_text = pymupdf4llm.to_markdown(document)
+        # md_text = pymupdf4llm.to_markdown(document)
+        md_text = ''
 
         data = md_text.encode()
         metadata = {
@@ -46,4 +50,4 @@ def parse_pdf_file(request: ScrapeRequest, client: AsyncClient or None = None) -
         metadata = request.metadata.copy()
 
     finally:
-        return ScrapeResponse(metadata=metadata, data=data)
+        return metadata, data, None
