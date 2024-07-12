@@ -10,6 +10,8 @@ from src.data_crawler.constants import LOGGER_NAME, MAX_RETRIES
 
 logger = logging.getLogger(LOGGER_NAME)
 
+writer_lock = asyncio.Lock()
+
 
 async def consumer_exception_handler(
         exception: Exception,
@@ -28,9 +30,12 @@ async def consumer_exception_handler(
     """
     if scrape_object is not None:
         logger.warning('Error consuming ScrapeRequest %s', scrape_object.url)
+
         # Log error to file
-        with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
-            _.write(scrape_object.get_postmortem_log())
+        async with writer_lock:
+            with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
+                _.write(scrape_object.get_postmortem_log())
+
         if scrape_object.reset(client) < MAX_RETRIES:
             if scrape_object is ScrapeRequest:
                 await task_queue.put(scrape_object)
