@@ -35,7 +35,6 @@ class ScrapeResponseConsumer(AsyncTask):
                 self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 scrape_response = await self.response_queue.get()
                 self.debug(f'Got response from queue: {scrape_response}')
-
                 # Verify task queue item is a compatible Request, remove if not
                 if type(scrape_response) is not ScrapeResponse:
                     self.warning(f'Bad request from task queue. '
@@ -47,8 +46,11 @@ class ScrapeResponseConsumer(AsyncTask):
                 jsonline = tasks[0]
                 if jsonline["doc"] is not None:
                     async with writer_lock:
-                        with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
-                            _.write(jsonline)
+                        try:
+                            with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                                _.write(jsonline)
+                        except Exception as e:
+                            raise e
 
                 self.response_queue.task_done()
                 self.debug('Task removed from queue.')

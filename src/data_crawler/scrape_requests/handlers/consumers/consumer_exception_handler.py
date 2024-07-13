@@ -28,14 +28,23 @@ async def handle_consumer_exception(
 
         # Log error to file
         async with writer_lock:
-            with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
-                _.write(scrape_object.get_postmortem_log())
+            try:
+                with jsonlines.open('./out/data-crawler/error.jsonl', 'a') as _:
+                    _.write(scrape_object.get_postmortem_log(exception))
+            except Exception as e:
+                async_task.exception(e)
 
+        # Reset
         if scrape_object.reset(async_task.client) < MAX_RETRIES:
-            if scrape_object is ScrapeRequest:
+            if type(scrape_object) is ScrapeRequest:
                 await async_task.task_queue.put(scrape_object)
-            elif scrape_object is ScrapeResponse:
+            elif type(scrape_object) is ScrapeResponse:
                 await async_task.response_queue.put(scrape_object)
+        if type(scrape_object) is ScrapeRequest:
+            async_task.task_queue.task_done()
+        elif type(scrape_object) is ScrapeResponse:
+            async_task.response_queue.task_done()
+
     else:
         async_task.warning(f'Error attempting to get {type(scrape_object).__name__} from queue.')
 

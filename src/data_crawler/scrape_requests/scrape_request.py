@@ -65,12 +65,14 @@ class ScrapeRequest:
         self.__reset_count += 1
         return self.__reset_count
 
-    def get_postmortem_log(self) -> dict:
+    def get_postmortem_log(self, exception: Exception) -> dict:
         try:
             return {
+                'type': self.__class__.__name__,
                 'response': self.response.status_code,
                 'metadata': self.metadata,
-                'resets': self.__reset_count
+                'resets': self.__reset_count,
+                'exception': str(exception)
             }
         except AttributeError or Exception:
             return {'response': None, 'metadata': self.metadata, 'resets': self.__reset_count}
