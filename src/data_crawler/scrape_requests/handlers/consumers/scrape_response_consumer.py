@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from src.data_crawler.scrape_requests import ScrapeResponse
 from src.data_crawler.scrape_requests.handlers import AsyncTask
 from src.data_crawler.constants import CONSUMER_SLEEP_TIME
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
+from . import handle_consumer_exception
 
 
 writer_lock = asyncio.Lock()
@@ -52,8 +52,10 @@ class ScrapeResponseConsumer(AsyncTask):
 
                 self.response_queue.task_done()
                 self.debug('Task removed from queue.')
+
             except Exception as e:
                 self.error('Error while processing scrape response.')
-                await consumer_exception_handler(e, scrape_response, self)
+                await handle_consumer_exception(e, scrape_response, self)
+
             finally:
                 await asyncio.sleep(CONSUMER_SLEEP_TIME)

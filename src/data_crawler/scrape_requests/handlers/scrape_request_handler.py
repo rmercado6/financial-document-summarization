@@ -16,8 +16,8 @@ logger = logging.getLogger(LOGGER_NAME)
 async def scrape_request_handler(
         requests: list[dict[str, any]],
         client: AsyncClient = AsyncClient(**HTTP_CLIENT_CONFIG),     # Async HTTP Client
-        task_queue: asyncio.Queue = None,     # Queue for ScrapeRequest objects
-        response_queue: asyncio.Queue = None,  # Queue for ScrapeResponse objects
+        task_queue: asyncio.Queue = asyncio.Queue(),     # Queue for ScrapeRequest objects
+        response_queue: asyncio.Queue = asyncio.Queue(),  # Queue for ScrapeResponse objects
 ) -> None:
     """Asynchronous ScrapeRequest Handler
 
@@ -28,12 +28,6 @@ async def scrape_request_handler(
     :return: None
     """
     logger.debug('Start scrape request handler.')
-
-    # Init queues if not provided in kwargs
-    if task_queue is None:
-        task_queue = asyncio.Queue()
-    if response_queue is None:
-        response_queue = asyncio.Queue()
 
     Path('./out/data-crawler').mkdir(parents=True, exist_ok=True)
 

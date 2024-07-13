@@ -12,7 +12,7 @@ logger = logging.getLogger(LOGGER_NAME)
 writer_lock = asyncio.Lock()
 
 
-async def consumer_exception_handler(
+async def handle_consumer_exception(
         exception: Exception,
         scrape_object: ScrapeRequest or ScrapeResponse,
         async_task: AsyncTask
@@ -24,7 +24,7 @@ async def consumer_exception_handler(
     :param async_task: AsyncTask object where the exception was raised
     """
     if scrape_object is not None:
-        async_task.warning(f'Error consuming ScrapeRequest {scrape_object.url}')
+        async_task.warning(f'Error consuming {type(scrape_object).__name__} {scrape_object.url}')
 
         # Log error to file
         async with writer_lock:
@@ -37,9 +37,6 @@ async def consumer_exception_handler(
             elif scrape_object is ScrapeResponse:
                 await async_task.response_queue.put(scrape_object)
     else:
-        async_task.warning('Error attempting to get ScrapeRequest from queue.')
-        raise exception
+        async_task.warning(f'Error attempting to get {type(scrape_object).__name__} from queue.')
 
     async_task.exception(exception)
-    async_task.task_queue.task_done()
-
