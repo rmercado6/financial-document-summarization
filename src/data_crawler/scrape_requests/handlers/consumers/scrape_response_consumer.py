@@ -53,6 +53,7 @@ class ScrapeResponseConsumer(AsyncTask):
                 self.response_queue.task_done()
                 self.debug('Task removed from queue.')
             except Exception as e:
-                await consumer_exception_handler(e, scrape_response, self.task_queue, self.response_queue, self.client)
+                self.error('Error while processing scrape response.')
+                await consumer_exception_handler(e, scrape_response, self)
             finally:
                 await asyncio.sleep(CONSUMER_SLEEP_TIME)

@@ -74,7 +74,8 @@ class ScrapeRequestConsumer(AsyncTask):
         while True:
             scrape_request: ScrapeRequest or None = None
             try:
-                self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
+                self.info(f'START | '
+                          f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 # Get scrape request from queue
                 scrape_request = await self.task_queue.get()
                 self.debug(f'Got request from task queue[{self.task_queue.qsize()}]: {scrape_request}')
@@ -108,12 +109,12 @@ class ScrapeRequestConsumer(AsyncTask):
 
             # Handle Exceptions if any
             except Exception as e:
-                await consumer_exception_handler(e, scrape_request, self.task_queue, self.response_queue, self.client)
+                self.error('Error while processing scrape request.')
+                await consumer_exception_handler(e, scrape_request, self)
 
             finally:
                 if scrape_request is not None:
-                    self.info(f'Finished processing request {scrape_request.url}. '
-                              f'Request queue: {self.task_queue.qsize()}; Response queue: {self.response_queue.qsize()}')
+                    self.info(f'END')
                 self.debug(f'Request Consumer Released, sleeping...')
 
                 # Sleep consumer for configured amount of time

@@ -45,8 +45,11 @@ class AsyncTask:
     def debug(self, msg: str) -> None:
         logger.debug(f'{self.id} | {msg}')
 
+    def warning(self, msg: str) -> None:
+        logger.warning(f'{self.id} | {msg}')
+
     def error(self, msg: str) -> None:
         logger.error(f'{self.id} | {msg}')
 
-    def warning(self, msg: str) -> None:
-        logger.warning(f'{self.id} | {msg}')
+    def exception(self, exception: Exception) -> None:
+        logger.exception(f'{self.id} | {exception}')
