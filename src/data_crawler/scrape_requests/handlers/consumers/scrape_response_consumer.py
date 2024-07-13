@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from src.data_crawler.scrape_requests import ScrapeResponse
 from src.data_crawler.scrape_requests.handlers import AsyncTask
 from src.data_crawler.constants import CONSUMER_SLEEP_TIME
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
+from . import handle_consumer_exception
 
 
 writer_lock = asyncio.Lock()
@@ -35,7 +35,6 @@ class ScrapeResponseConsumer(AsyncTask):
                 self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 scrape_response = await self.response_queue.get()
                 self.debug(f'Got response from queue: {scrape_response}')
-
                 # Verify task queue item is a compatible Request, remove if not
                 if type(scrape_response) is not ScrapeResponse:
                     self.warning(f'Bad request from task queue. '
@@ -47,12 +46,18 @@ class ScrapeResponseConsumer(AsyncTask):
                 jsonline = tasks[0]
                 if jsonline["doc"] is not None:
                     async with writer_lock:
-                        with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
-                            _.write(jsonline)
+                        try:
+                            with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                                _.write(jsonline)
+                        except Exception as e:
+                            raise e
 
                 self.response_queue.task_done()
                 self.debug('Task removed from queue.')
+
             except Exception as e:
-                await consumer_exception_handler(e, scrape_response, self.task_queue, self.response_queue, self.client)
+                self.error('Error while processing scrape response.')
+                await handle_consumer_exception(e, scrape_response, self)
+
             finally:
                 await asyncio.sleep(CONSUMER_SLEEP_TIME)

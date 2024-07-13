@@ -24,8 +24,8 @@ class PdfParseTestCase(unittest.TestCase):
         logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
 
         # Financial Reports PDF Request Mock
-        self.financial_reports_pdf_request_mock: ScrapeRequest = MagicMock(
-            ScrapeRequest,
+        self.financial_reports_pdf_request_mock: ScrapeResponse = MagicMock(
+            ScrapeResponse,
             metadata={
                 'data_type': 'annual_report',
                 'share': {
@@ -44,14 +44,14 @@ class PdfParseTestCase(unittest.TestCase):
             byte_stream = BytesIO()
             pdf_writer.write_stream(byte_stream)
             byte_stream.seek(0)
-            self.financial_reports_pdf_request_mock.response.content = byte_stream.read()
+            self.financial_reports_pdf_request_mock.request.response.content = byte_stream.read()
 
     def test_parse_financial_reports_pdfs(self) -> None:
         """Test the parsing of the financial reports PDFs"""
         metadata, data, further_requests = parse_pdf_file(
             self.financial_reports_pdf_request_mock
         )
-        self.assertTrue(type(data) is bytes)
+        self.assertTrue(data is None)
         self.assertIsNone(further_requests)
         self.assertTrue(type(metadata) is dict)
         self.assertTrue('src' in metadata.keys())

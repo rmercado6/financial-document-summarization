@@ -20,6 +20,10 @@ logging.basicConfig(**LOGGING_CONFIG['testing'])
 logger = logging.getLogger('Requests Tests')
 
 
+async def delay(*args):
+    await asyncio.sleep(0)
+
+
 class ProducerTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
@@ -92,11 +96,11 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
         async with asyncio.timeout(ASYNC_AWAIT_TIMEOUT):
             await self.queue.put(self.sample_request)
 
-            # Error esta en obtener el delay pues no hace peticiones http; hay que hace mock de esos metodos
-            self.consumers = [
-                asyncio.create_task(ScrapeRequestConsumer(self.client, self.queue, self.responses, _)())
-                for _ in range(10)
-            ]
+            self.consumers = []
+            for _ in range(10):
+                c = ScrapeRequestConsumer(self.client, self.queue, self.responses, _)
+                c.get_request_delay = lambda x: 0
+                self.consumers.append(asyncio.create_task(c()))
 
             await self.queue.join()
 
@@ -106,12 +110,13 @@ class ConsumerTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(1, self.responses.qsize())
 
             item = await self.responses.get()
-            self.responses.task_done()
 
             self.assertTrue(type(item) is ScrapeResponse)
-            self.assertEqual({'method': 'GET'}, item.metadata)
+            self.assertEqual({}, item.metadata)
             self.assertEqual('', item.data)
             self.assertEqual([], item.further_requests)
+
+            self.responses.task_done()
 
     def tearDown(self):
         logger.debug(f'{"-" * 20} Ending {self.__class__.__name__} case... {"-" * 20} ')
@@ -207,7 +212,7 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
             self.firms_detail_page_response_mock = _.read()
 
         # Set mock request
-        self.request_mock = mock.MagicMock(httpx.Request, method='GET', url='http://test.url')
+        self.request_mock = mock.Mock(httpx.Request, method='GET', url='http://test.url')
 
         # Set pdf response contents
         writer = pypdf.PdfWriter()
@@ -218,7 +223,11 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.pdf_response_mock = byte_stream.read()
 
     @mock.patch('httpx.AsyncClient.request', new_callable=mock.AsyncMock)
-    async def test_scrape_ar_firm_detail_page(self, async_client_mock: mock.AsyncMock) -> None:
+    @mock.patch.object(ScrapeRequestConsumer, 'delay_request', delay)
+    async def test_scrape_ar_firm_detail_page(
+            self,
+            async_client_mock: mock.AsyncMock,
+    ) -> None:
         """Test the scraping of the stocks' financial statements page"""
         # Set Up Mocks
         async_client_mock.side_effect = [
@@ -241,7 +250,7 @@ class ScrapeRequestHandlerTestCase(unittest.IsolatedAsyncioTestCase):
                 {
                     'metadata': {},
                     'method': 'GET',
-                    'url': '',
+                    'url': 'http://test.url',
                     'consumer': parse_firms_detail_page
                 }
             ])
@@ -258,8 +267,9 @@ class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
+        self.test_exception = Exception("TEST EXCEPTION")
         self.client_ex = mock.AsyncMock(AsyncClient)
-        self.client_ex.request.side_effect = Exception()
+        self.client_ex.request.side_effect = self.test_exception
 
         self.client = mock.AsyncMock(AsyncClient)
         self.client.request.side_effect = [httpx.Response(200, content='sample content')]
@@ -278,7 +288,7 @@ class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.client_ex.request.assert_awaited_once()
 
-        self.assertTrue(request.get_postmortem_log() is not None)
+        self.assertTrue(request.get_postmortem_log(self.test_exception) is not None)
 
         self.assertTrue(type(request.reset(client=self.client)), ScrapeRequest)
         await request.send()

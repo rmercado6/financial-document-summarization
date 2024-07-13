@@ -8,7 +8,7 @@ from urllib.robotparser import RobotFileParser
 
 from src.data_crawler.scrape_requests import ScrapeRequest, ScrapeResponse
 from src.data_crawler.scrape_requests.handlers import redirect_handler, success_handler, AsyncTask
-from src.data_crawler.scrape_requests.handlers.consumers import consumer_exception_handler
+from . import handle_consumer_exception
 from src.data_crawler.constants import LOGGER_NAME, CONSUMER_SLEEP_TIME, ROBOTS_TXT_SUFFIX
 
 
@@ -45,36 +45,43 @@ class ScrapeRequestConsumer(AsyncTask):
         return f'SRQC-{super().id}'
 
     def get_request_delay(self, url: URL):
-        self.debug(f'Getting request delay for {url}')
         _robots_context = robots_context.get()
-        scheme = url.scheme + '://' if url.scheme else 'https://'
-        if url.host not in _robots_context.keys():
-            robots_parser = RobotFileParser(url=scheme + url.host + ROBOTS_TXT_SUFFIX)
-            robots_parser.read()
-            if robots_parser.crawl_delay("*"):
-                _robots_context[url.host] = robots_parser.crawl_delay("*")
-            else:
-                _robots_context[url.host] = 0
-            robots_context.set(_robots_context)
-        self.debug(f'Request delay for {url} is of {_robots_context[url.host]}s')
+        try:
+            if url.host not in _robots_context.keys():
+                self.debug(f'Getting request delay for {url}')
+                scheme = url.scheme + '://' if url.scheme else 'https://'
+                robots_parser = RobotFileParser(url=scheme + url.host + ROBOTS_TXT_SUFFIX)
+                robots_parser.read()
+                if robots_parser.crawl_delay("*"):
+                    _robots_context[url.host] = robots_parser.crawl_delay("*")
+                else:
+                    _robots_context[url.host] = 0
+        except Exception as e:
+            self.warning(f'Failed to retrieve {url} robots.txt file. Got exception:')
+            self.exception(exception=e)
+            _robots_context[url.host] = 0
+        robots_context.set(_robots_context)
         return _robots_context[url.host]
 
     async def delay_request(self, url: URL):
-        self.debug(f'Starting delay request for {url}')
+        self.debug(f'Delaying request {url}')
         _request_times = request_times.get()
         if url.host in _request_times.keys():
-            while abs(time.time() - _request_times[url.host]) < self.get_request_delay(url):
+            delay = self.get_request_delay(url)
+            self.debug(f'Request delay for {url} is of {delay}s')
+            while abs(time.time() - _request_times[url.host]) < delay:
                 await asyncio.sleep(0)
         _request_times[url.host] = time.time()
         request_times.set(_request_times)
-        self.debug(f'Finished delay request for {url}')
+        self.debug(f'Delayed request {url}')
 
     async def __call__(self) -> None:
         self.debug(f'Starting Request Consumer {self.id}')
         while True:
             scrape_request: ScrapeRequest or None = None
             try:
-                self.info(f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
+                self.info(f'START | '
+                          f'Task Queue: {self.task_queue.qsize()} | Response Queue: {self.response_queue.qsize()}')
                 # Get scrape request from queue
                 scrape_request = await self.task_queue.get()
                 self.debug(f'Got request from task queue[{self.task_queue.qsize()}]: {scrape_request}')
@@ -108,12 +115,12 @@ class ScrapeRequestConsumer(AsyncTask):
 
             # Handle Exceptions if any
             except Exception as e:
-                await consumer_exception_handler(e, scrape_request, self.task_queue, self.response_queue, self.client)
+                self.error('Error while processing scrape request.')
+                await handle_consumer_exception(e, scrape_request, self)
 
             finally:
                 if scrape_request is not None:
-                    self.info(f'Finished processing request {scrape_request.url}. '
-                              f'Request queue: {self.task_queue.qsize()}; Response queue: {self.response_queue.qsize()}')
+                    self.info(f'END')
                 self.debug(f'Request Consumer Released, sleeping...')
 
                 # Sleep consumer for configured amount of time

@@ -26,8 +26,8 @@ class HlParseFinancialStatementsAndReportsTestCase(unittest.TestCase):
             financial_statements_page_response_mock = _.read()
 
         # Financial Statements Page Request Mock
-        self.financial_statements_page_request_mock: ScrapeRequest = MagicMock(ScrapeRequest, metadata={})
-        self.financial_statements_page_request_mock.response.text = financial_statements_page_response_mock
+        self.financial_statements_page_request_mock: ScrapeResponse = MagicMock(ScrapeResponse, metadata={})
+        self.financial_statements_page_request_mock.request.response.text = financial_statements_page_response_mock
         self.financial_statements_page_request_mock.url = 'http://test.url'
 
         # HTTP Client Mock
