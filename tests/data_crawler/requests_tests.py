@@ -267,8 +267,9 @@ class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         logger.debug(f'{"-" * 20} Starting {self.__class__.__name__} case... {"-" * 20}')
+        self.test_exception = Exception("TEST EXCEPTION")
         self.client_ex = mock.AsyncMock(AsyncClient)
-        self.client_ex.request.side_effect = Exception()
+        self.client_ex.request.side_effect = self.test_exception
 
         self.client = mock.AsyncMock(AsyncClient)
         self.client.request.side_effect = [httpx.Response(200, content='sample content')]
@@ -287,7 +288,7 @@ class ScrapeRequestRestartTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.client_ex.request.assert_awaited_once()
 
-        self.assertTrue(request.get_postmortem_log() is not None)
+        self.assertTrue(request.get_postmortem_log(self.test_exception) is not None)
 
         self.assertTrue(type(request.reset(client=self.client)), ScrapeRequest)
         await request.send()
