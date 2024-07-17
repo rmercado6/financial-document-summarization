@@ -1,4 +1,6 @@
 <script setup>
+import MarkdownRender from "@/components/MarkdownRender.vue";
+
 import {useDocumentStore} from "@/stores/document.js";
 import {onMounted, ref} from "vue";
 
@@ -37,8 +39,8 @@ onMounted(async () => {
             <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
                 loading ...
             </div>
-            <div v-if="!loading" class="md-display overflow-y-auto overflow-x-clip h-full">
-                {{documentStore.document.doc}}
+            <div v-if="!loading" class="md-display flex flex-col h-full">
+                <MarkdownRender :text="documentStore.document.doc"></MarkdownRender>
             </div>
         </div>
     </div>
@@ -50,7 +52,7 @@ onMounted(async () => {
         @apply flex-grow flex flex-col justify-center;
     }
     .md-display {
-        @apply flex-grow h-full border border-slate-200 rounded-md p-3 overflow-y-auto overflow-x-clip
+        @apply flex-grow h-full border border-slate-200 rounded-md overflow-y-hidden overflow-x-clip
     }
 }
 </style>
