@@ -2,14 +2,15 @@
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from "primevue/inputtext";
+import router from "@/router/index.js";
 
 import {ref, onMounted} from 'vue';
 import {FilterMatchMode} from '@primevue/core/api';
-import {useDocumentsStore} from "@/stores/documents.js";
+import {useFetchDocumentsListStore} from "@/stores/documents_list.js";
 
-const documentsStore = useDocumentsStore()
-
+const documentsStore = useFetchDocumentsListStore()
 const documents = documentsStore.documents;
+
 const loading = ref(true);
 const filters = ref({
     global: {value: null, matchMode: FilterMatchMode.CONTAINS},
@@ -19,15 +20,22 @@ const filters = ref({
     document_type: {value: null, matchMode: FilterMatchMode.CONTAINS}
 });
 
+const selected_document = ref();
+
+function selectDocument(){
+    router.push({name: 'document', params: selected_document.value})
+}
+
 onMounted(() => {
     loading.value = false;
-    console.log(documents.value)
 });
 </script>
 
 <template>
     <main>
-        <DataTable v-model:filters="filters" :value="documents" paginator :rows="10" dataKey="id" filterDisplay="row"
+        <DataTable v-model:filters="filters"  :value="documents" paginator :rows="10" filterDisplay="row"
+                   v-model:selection="selected_document" selectionMode="single" :metaKeySelection="false"
+                   @rowSelect="selectDocument"
                    :loading="loading"
                    :globalFilterFields="['title', 'ticker', 'year', 'document_type']">
             <template #header>

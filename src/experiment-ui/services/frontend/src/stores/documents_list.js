@@ -1,8 +1,8 @@
 import {ref, computed} from 'vue'
 import {defineStore} from 'pinia'
 
-export const useDocumentsStore = defineStore('documents', () => {
-    const document_list = ref([])
+export const useFetchDocumentsListStore = defineStore('documents', () => {
+    const document_list = ref([]);
 
     const documents = computed(() => {
         if (document_list.value.length === 0) {
