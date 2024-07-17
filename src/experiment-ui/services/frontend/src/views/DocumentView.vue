@@ -19,25 +19,27 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div>
-        <h1 class="text-3xl font-bold">
-            {{title}}
-            <span class="text-xl">[{{ticker}}]</span>
-        </h1>
-        <p class="flex gap-2 text-xl">
-            <span>{{document_type.replace('_', ' ').replace(/\b\w/g, s => s.toUpperCase())}}</span>
-            <span>({{year}})</span>
-        </p>
-    </div>
-    <div class="flex-grow mt-3 flex flex-col p-3">
-        <h3 class="text-2xl px-1 pb-2">
-            Document preview
-        </h3>
-        <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
-            loading ...
+    <div class="flex flex-col max-h-full overflow-y-hidden">
+        <div>
+            <h1 class="text-3xl font-bold">
+                {{title}}
+                <span class="text-xl">[{{ticker}}]</span>
+            </h1>
+            <p class="flex gap-2 text-xl">
+                <span>{{document_type.replace('_', ' ').replace(/\b\w/g, s => s.toUpperCase())}}</span>
+                <span>({{year}})</span>
+            </p>
         </div>
-        <div v-if="!loading" class="md-display">
-            {{documentStore.document.doc}}
+        <div class="mt-3 flex flex-col p-3 h-full overflow-y-hidden">
+            <h3 class="text-2xl px-1 pb-2">
+                Document preview
+            </h3>
+            <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
+                loading ...
+            </div>
+            <div v-if="!loading" class="md-display overflow-y-auto overflow-x-clip h-full">
+                {{documentStore.document.doc}}
+            </div>
         </div>
     </div>
 </template>

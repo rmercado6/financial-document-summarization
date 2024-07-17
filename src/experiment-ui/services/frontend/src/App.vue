@@ -4,7 +4,7 @@
 </script>
 
 <template>
-  <div class="flex flex-col w-full flex-grow py-5 px-7 rounded-3xl bg-white shadow-lg shadow-slate-300 border border-slate-200">
+  <div class="flex flex-col w-full flex-grow py-5 px-7 rounded-3xl bg-white shadow-lg shadow-slate-300 border border-slate-200 overflow-y-hidden">
     <header>
       <div class="wrapper">
         <nav class="flex my-1 pb-3 gap-3">
