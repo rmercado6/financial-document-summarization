@@ -17,8 +17,10 @@ services:
       - .env
     build: ./services/frontend
     ports:
-      - 8000:8080
+      - 8000:8000
     depends_on:
       - backend
     links:
       - backend
+    volumes:
+      - ./services/frontend/src:/app/src

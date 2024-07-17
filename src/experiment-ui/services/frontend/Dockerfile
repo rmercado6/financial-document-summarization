@@ -18,4 +18,4 @@ RUN npm run build
 
 EXPOSE ${PORT}
 
-CMD [ "npm", "run", "preview" ]
+CMD [ "npm", "run", "dev" ]
