@@ -1,95 +1,76 @@
 <script setup>
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import IconField from "primevue/iconfield";
-import InputIcon from 'primevue/inputicon';
 import InputText from "primevue/inputtext";
 
 import {ref, onMounted} from 'vue';
 import {FilterMatchMode} from '@primevue/core/api';
+import {useDocumentsStore} from "@/stores/documents.js";
 
-let products = [
-    {
-        'code': 123,
-        'name': 'asd',
-        'category': 'asd category',
-        'quantity': 2
-    },
-    {
-        'code': 1234,
-        'name': 'asdf',
-        'category': 'asd category',
-        'quantity': 2
-    }
-]
+const documentsStore = useDocumentsStore()
 
-const customers = ref();
+const documents = documentsStore.documents;
 const loading = ref(true);
 const filters = ref({
     global: {value: null, matchMode: FilterMatchMode.CONTAINS},
-    code: {value: null, matchMode: FilterMatchMode.CONTAINS},
-    name: {value: null, matchMode: FilterMatchMode.CONTAINS},
-    category: {value: null, matchMode: FilterMatchMode.CONTAINS},
-    quantity: {value: null, matchMode: FilterMatchMode.CONTAINS}
+    title: {value: null, matchMode: FilterMatchMode.CONTAINS},
+    ticker: {value: null, matchMode: FilterMatchMode.CONTAINS},
+    year: {value: null, matchMode: FilterMatchMode.CONTAINS},
+    document_type: {value: null, matchMode: FilterMatchMode.CONTAINS}
 });
 
 onMounted(() => {
-    customers.value = products;
     loading.value = false;
+    console.log(documents.value)
 });
 </script>
 
 <template>
     <main>
-        <DataTable v-model:filters="filters" :value="customers" paginator :rows="10" dataKey="id" filterDisplay="row"
+        <DataTable v-model:filters="filters" :value="documents" paginator :rows="10" dataKey="id" filterDisplay="row"
                    :loading="loading"
-                   :globalFilterFields="['code', 'name', 'category', 'quantity']">
+                   :globalFilterFields="['title', 'ticker', 'year', 'document_type']">
             <template #header>
                 <div class="flex justify-end">
-                    <IconField>
-                        <InputIcon>
-                            <i class="pi pi-search"/>
-                        </InputIcon>
-                        <InputText v-model="filters['global'].value" placeholder="Keyword Search"/>
-                    </IconField>
+                    <InputText v-model="filters['global'].value" placeholder="Search"/>
                 </div>
             </template>
-            <template #empty> No customers found.</template>
-            <template #loading> Loading customers data. Please wait.</template>
-            <Column field="code" header="Code" style="min-width: 12rem">
+            <template #empty> No documents found.</template>
+            <template #loading> Loading documents data. Please wait.</template>
+            <Column field="title" header="Title" style="min-width: 12rem">
                 <template #body="{ data }">
-                    {{data.code}}
+                    {{data.title}}
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                               placeholder="Search by code"/>
+                               placeholder="Search by title"/>
                 </template>
             </Column>
-            <Column field="name" header="Name" style="min-width: 12rem">
+            <Column field="ticker" header="Ticker" style="min-width: 12rem">
                 <template #body="{ data }">
-                    {{data.name}}
+                    {{data.ticker}}
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                               placeholder="Search by name"/>
+                               placeholder="Search by ticker"/>
                 </template>
             </Column>
-            <Column field="category" header="Category" style="min-width: 12rem">
+            <Column field="year" header="Year" style="min-width: 12rem">
                 <template #body="{ data }">
-                    {{data.category}}
+                    {{data.year}}
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                               placeholder="Search by name"/>
+                               placeholder="Search by year"/>
                 </template>
             </Column>
-            <Column field="quantity" header="Quantity" style="min-width: 12rem">
+            <Column field="document_type" header="Document Type" style="min-width: 12rem">
                 <template #body="{ data }">
-                    {{data.quantity}}
+                    {{data.document_type.replace('_', ' ').replace(/\b\w/g, s => s.toUpperCase())}}
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                               placeholder="Search by name"/>
+                               placeholder="Search by document type"/>
                 </template>
             </Column>
         </DataTable>
