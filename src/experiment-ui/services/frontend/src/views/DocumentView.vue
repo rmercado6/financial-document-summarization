@@ -2,6 +2,7 @@
 import {ref} from "vue";
 import DocumentPreview from "@/components/DocumentPreview.vue";
 import PromptForm from "@/components/PromptForm.vue";
+import DocumentDetail from "@/components/DocumentDetail.vue";
 
 const props = defineProps({
     title: String,
@@ -16,22 +17,14 @@ const display_prompt_form = ref(false);
 <template>
     <div class="flex gap-4 max-h-full h-full overflow-y-hidden">
         <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden">
-            <div>
-                <div class="flex">
-                    <h1 class="text-3xl font-bold">
-                        {{title}}
-                        <span class="text-xl">[{{ticker}}]</span>
-                    </h1>
-                    <div class="flex-grow flex justify-end ">
-                        <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">
-                            Query Model
-                        </span>
-                    </div>
+            <div class="flex">
+                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year">
+                </DocumentDetail>
+                <div class="flex-grow flex justify-end">
+                    <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">
+                        Query Model
+                    </span>
                 </div>
-                <p class="flex gap-2 text-xl">
-                    <span>{{document_type.replace('_', ' ').replace(/\b\w/g, s => s.toUpperCase())}}</span>
-                    <span>({{year}})</span>
-                </p>
             </div>
             <div class="mt-2 flex flex-col h-full overflow-y-hidden">
                 <DocumentPreview :title="title" :ticker="ticker" :document_type="document_type" :year="year">
@@ -50,7 +43,7 @@ const display_prompt_form = ref(false);
 
 <style scoped>
 .btn {
-    @apply p-1 px-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-md;
+    @apply p-1 px-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-md h-fit;
     @apply hover:cursor-pointer hover:bg-blue-200 hover:border-blue-900 hover:text-blue-950
 }
 

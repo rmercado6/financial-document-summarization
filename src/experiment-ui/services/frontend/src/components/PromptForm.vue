@@ -2,12 +2,17 @@
 import {ref} from "vue";
 import router from "@/router/index.js";
 
+import {useQueryLLMs} from "@/stores/query_llms.js";
+
 const props = defineProps({
     title: String,
     ticker: String,
     year: String,
     document_type: String,
 })
+
+const store = useQueryLLMs();
+
 const model = ref('llama');
 const pipeline = ref('refine');
 const question_prompt = ref(
@@ -23,7 +28,18 @@ const refine_prompt = ref(
 );
 
 function query_model() {
-    console.log(model.value, pipeline.value, question_prompt.value, refine_prompt.value);
+    store.query_model({
+        model: model.value,
+        pipeline: pipeline.value,
+        question_prompt: question_prompt.value,
+        refine_prompt: refine_prompt.value,
+        document: {
+            title: props.title,
+            year: props.year,
+            ticker: props.ticker,
+            document_type: props.document_type,
+        }
+    })
     router.push({name: 'query_response'})
 }
 </script>
