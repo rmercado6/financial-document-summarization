@@ -22,28 +22,27 @@ onMounted(async () => {
 </script>
 
 <template>
-<div class="flex flex-col h-full w-full">
-    <div class="flex gap-3 my-2 pb-2 pr-3 items-center border-b border-slate-100">
-        <h3 class="text-xl px-1 grow font-semibold">
-            Document preview
-        </h3>
-        <div v-bind:class="plain_text ? 'md-display-btn active' : 'md-display-btn inactive'"
-             @click="plain_text = !plain_text">
-            Aa
+    <div class="flex flex-col h-full w-full">
+        <div class="flex gap-3 my-2 pb-2 pr-3 items-center border-b border-slate-100">
+            <h3 class="text-xl px-1 grow font-semibold">
+                Document preview
+            </h3>
+            <div v-bind:class="plain_text ? 'md-display-btn active' : 'md-display-btn inactive'"
+                 @click="plain_text = !plain_text">
+                Aa
+            </div>
+        </div>
+        <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
+            loading ...
+        </div>
+        <textarea v-if="!loading && plain_text" readonly
+                  class="md-display p-3 !overflow-y-scroll resize-none"
+                  :value="documentStore.document.doc">
+        </textarea>
+        <div v-if="!loading && !plain_text" class="md-display flex flex-col h-full">
+            <MarkdownRender :text="documentStore.document.doc"></MarkdownRender>
         </div>
     </div>
-    <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
-        loading ...
-    </div>
-    <textarea v-if="!loading && plain_text" readonly
-              class="md-display p-3 !overflow-y-scroll resize-none"
-              :value="documentStore.document.doc">
-    </textarea>
-    <div v-if="!loading && !plain_text" class="md-display flex flex-col h-full">
-        <MarkdownRender :text="documentStore.document.doc"></MarkdownRender>
-    </div>
-</div>
-
 </template>
 
 <style scoped>
