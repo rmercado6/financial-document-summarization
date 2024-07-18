@@ -17,6 +17,11 @@ const router = createRouter({
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/DocumentView.vue')
+    },
+    {
+      path: '/query/response',
+      name: 'query_response',
+      component: () => import('../views/QueryResponseView.vue')
     }
   ]
 })

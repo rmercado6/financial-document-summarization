@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue";
+import router from "@/router/index.js";
 
 const props = defineProps({
     title: String,
@@ -23,6 +24,7 @@ const refine_prompt = ref(
 
 function query_model() {
     console.log(model.value, pipeline.value, question_prompt.value, refine_prompt.value);
+    router.push({name: 'query_response'})
 }
 </script>
 
