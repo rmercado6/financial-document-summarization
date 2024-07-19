@@ -21,6 +21,27 @@ onBeforeMount(() => {
         router.back();
     }
 })
+
+function get_input_doc() {
+    if (active_step.value >= 0) {
+        return queryLLMs.response.pipeline_outputs.input_documents[active_step.value].page_content
+    }
+    return ''
+}
+
+function get_model_response() {
+    if (active_step.value >= 0) {
+        return queryLLMs.response.pipeline_outputs.intermediate_steps[active_step.value]
+    }
+    return queryLLMs.response.pipeline_outputs.output_text
+}
+
+function get_prompt() {
+    if (active_step.value >= 0){
+        return queryLLMs.response.query.question_prompt
+    }
+    return queryLLMs.response.query.refine_prompt
+}
 </script>
 
 <template>
@@ -43,23 +64,29 @@ onBeforeMount(() => {
             <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
                 <div class="steps-panel">
                     <PipelineStepPanel v-for="(x, index) in queryLLMs.response.pipeline_outputs.input_documents"
-                                       :i="index + 1"
+                                       :i="(index + 1).toString()"
                                        v-bind:class="active_step === index ? 'step active' : 'step inactive'"
                                        :input_doc="x.page_content" @click="active_step = index"></PipelineStepPanel>
+                    <PipelineStepPanel :i="''" v-bind:class="active_step === -1 ? 'step active' : 'step inactive'"
+                                       :input_doc="'FINAL ANSWER'"
+                                       @click="active_step = -1"></PipelineStepPanel>
                 </div>
                 <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
                     <div class="flex p-1 bg-slate-50 border-b border-slate-200">
-                        <textarea class="flex-grow resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200 rounded-md text-sm py-1 px-2"
-                                  rows="3" :value="queryLLMs.query.question_prompt"></textarea>
+                        <textarea
+                            class="flex-grow resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200 rounded-md text-sm py-1 px-2"
+                            rows="3" :value="get_prompt()"></textarea>
                     </div>
-                    <div class="flex flex-1 overflow-y-hidden overflow-x-hidden">
-                        <div class="content-panel">
+                    <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x divide-slate-200">
+                        <div v-if="active_step >= 0" class="content-panel">
+                            <span class="label">Input</span>
                             <DocumentViewer
-                                :text="queryLLMs.response.pipeline_outputs.input_documents[active_step].page_content">
+                                :text="get_input_doc()">
                             </DocumentViewer>
                         </div>
                         <div class="content-panel">
-                            <DocumentViewer :text="queryLLMs.response.pipeline_outputs.intermediate_steps[active_step]">
+                            <span class="label">Output</span>
+                            <DocumentViewer :text="get_model_response()">
                             </DocumentViewer>
                         </div>
                     </div>
@@ -75,7 +102,11 @@ onBeforeMount(() => {
 }
 
 .content-panel {
-    @apply flex-1 overflow-y-hidden overflow-x-hidden flex;
+    @apply flex-1 overflow-y-hidden overflow-x-hidden flex flex-col;
+}
+
+.content-panel .label{
+    @apply px-3 py-1 text-sm font-semibold border-b border-slate-200 bg-slate-50;
 }
 
 .detail-pill {

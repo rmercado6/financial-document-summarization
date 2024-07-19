@@ -10,7 +10,7 @@ const props = defineProps({
 </script>
 
 <template>
-    <div class="overflow-y-auto overflow-x-clip h-full p-3 markdown-body" >
+    <div class="overflow-y-scroll overflow-x-clip h-full p-3 markdown-body" >
         <VueMarkdownIt :source="props.text"></VueMarkdownIt>
     </div>
 </template>
