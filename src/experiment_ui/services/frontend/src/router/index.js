@@ -10,6 +10,11 @@ const router = createRouter({
       component: HomeView
     },
     {
+      path: '/history',
+      name: 'history',
+      component: () => import('../views/ExperimentListView.vue')
+    },
+    {
       path: '/doc/:title/:ticker/:year/:document_type',
       name: 'document',
       props: true,
