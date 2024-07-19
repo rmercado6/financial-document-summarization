@@ -20,10 +20,10 @@ const filters = ref({
     time: {value: null, matchMode: FilterMatchMode.CONTAINS}
 });
 
-const selected_document = ref();
+const selected_experiment = ref();
 
-function selectDocument(){
-    router.push({name: 'document', params: selected_document.value})
+function selectExperiment(){
+    router.push({name: 'experiment', params: selected_experiment.value})
 }
 
 function getDocumentName(doc) {
@@ -38,8 +38,8 @@ onMounted(() => {
 <template>
     <main>
         <DataTable v-model:filters="filters"  :value="experiments" paginator :rows="9" filterDisplay="row"
-                   v-model:selection="selected_document" selectionMode="single" :metaKeySelection="false"
-                   @rowSelect="selectDocument"
+                   v-model:selection="selected_experiment" selectionMode="single" :metaKeySelection="false"
+                   @rowSelect="selectExperiment"
                    :loading="loading"
                    :globalFilterFields="['document', 'model', 'pipeline', 'time']">
             <template #header>
