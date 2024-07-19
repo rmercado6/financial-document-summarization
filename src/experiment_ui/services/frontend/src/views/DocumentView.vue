@@ -18,7 +18,7 @@ const display_prompt_form = ref(false);
     <div class="flex gap-4 max-h-full h-full overflow-y-hidden">
         <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden">
             <div class="flex">
-                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year">
+                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year" oneline>
                 </DocumentDetail>
                 <div class="flex-grow flex justify-end">
                     <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">

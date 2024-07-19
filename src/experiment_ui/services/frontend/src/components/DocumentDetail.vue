@@ -3,20 +3,21 @@ const props = defineProps({
     title: String,
     ticker: String,
     document_type: String,
-    year: String
+    year: String,
+    oneline: Boolean
 })
 </script>
 
 <template>
-    <div>
-        <h1 class="text-3xl font-bold">
+    <div v-bind:class="oneline ? 'flex gap-2' : ''">
+        <h1 class="text-2xl font-semibold">
             {{title}}
             <span class="text-xl">[{{ticker}}]</span>
         </h1>
-        <p class="flex gap-2 text-xl">
+        <div v-bind:class="oneline ? 'flex gap-2 text-xl items-end' : 'flex gap-2 text-xl'">
             <span>{{document_type.replace('_', ' ').replace(/\b\w/g, s => s.toUpperCase())}}</span>
             <span>({{year}})</span>
-        </p>
+        </div>
     </div>
 </template>
 
