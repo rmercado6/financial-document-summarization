@@ -47,12 +47,22 @@ onBeforeMount(() => {
                                        v-bind:class="active_step === index ? 'step active' : 'step inactive'"
                                        :input_doc="x.page_content" @click="active_step = index"></PipelineStepPanel>
                 </div>
-                <div class="content-panel">
-                    <DocumentViewer :text="queryLLMs.response.pipeline_outputs.input_documents[active_step].page_content">
-                    </DocumentViewer>
-                </div>
-                <div class="content-panel">
-                    <!--                    {{queryLLMs.response}}-->
+                <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
+                    <div class="flex p-1 bg-slate-50 border-b border-slate-200">
+                        <textarea class="flex-grow resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200 rounded-md text-sm py-1 px-2"
+                                  rows="3" :value="queryLLMs.query.question_prompt"></textarea>
+                    </div>
+                    <div class="flex flex-1 overflow-y-hidden overflow-x-hidden">
+                        <div class="content-panel">
+                            <DocumentViewer
+                                :text="queryLLMs.response.pipeline_outputs.input_documents[active_step].page_content">
+                            </DocumentViewer>
+                        </div>
+                        <div class="content-panel">
+                            <DocumentViewer :text="queryLLMs.response.pipeline_outputs.intermediate_steps[active_step]">
+                            </DocumentViewer>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
