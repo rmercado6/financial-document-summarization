@@ -63,14 +63,25 @@ def load_document_from_dataset(title: str, ticker: str, document_type: str, year
 
 
 @app.get("/documents")
-def home():
+def documents():
     docs = []
-    with jsonlines.open('./out/data-crawler/data.jsonl') as reader:
-        for line in reader:
+    with jsonlines.open('./out/data-crawler/data.jsonl') as r:
+        for _ in r:
             # line['preview'] = line.pop('doc')[:100]
-            line.pop('doc')
-            docs.append(line)
+            _.pop('doc')
+            docs.append(_)
     return docs
+
+
+@app.get("/experiments")
+def experiments():
+    experiments = []
+    with jsonlines.open('./out/experiment_ui/responses.jsonl') as r:
+        for _ in r:
+            # line['preview'] = line.pop('doc')[:100]
+            _.pop('pipeline_outputs')
+            experiments.append(_)
+    return experiments
 
 
 @app.get("/documents/{title}/{ticker}/{document_type}/{year}")
