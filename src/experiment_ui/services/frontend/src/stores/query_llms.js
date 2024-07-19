@@ -6,6 +6,7 @@ export const useQueryLLMs = defineStore(
     () => {
         const querying = ref(false)
         const query = ref({});
+        const response = ref({});
 
         let query_model = async params => {
             querying.value = true;
@@ -17,11 +18,21 @@ export const useQueryLLMs = defineStore(
                 document: params.document
             }
 
-            setTimeout(() => {
+            await fetch('/api/query_model', {
+                method: 'POST',
+                body: JSON.stringify(query.value),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).then(response =>
+                !response.ok
+                    ? Promise.reject(response)
+                    : Promise.resolve(response.json())
+            ).then(data => {
+                response.value = data;
                 querying.value = false;
-            }, 2500);
-            return params
+            })
         }
 
-        return {querying, query, query_model}
+        return {querying, query, query_model, response}
     })
