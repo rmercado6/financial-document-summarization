@@ -1,11 +1,14 @@
 import jsonlines
 import logging
+import os
+import time
 
 from pathlib import Path
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 from langchain_text_splitters.markdown import MarkdownTextSplitter
 
 from src.summarization.models import load_model
@@ -13,6 +16,20 @@ from src.summarization.document import Document
 from src.summarization.pipelines import refine, map_reduce
 from src.summarization.constants import CHUNK_SIZE, CHUNK_OVERLAP, PIPELINES
 
+
+BOOLEAN_TRUE_VALUES = (1, 1.0, '1', '1.0', 'true', 'yes', 'y', 'on')
+
+MOCK_MODE = os.environ['MOCK_QUERY_RESPONSE'].lower()
+MOCK_RESPONSE = {}
+with jsonlines.open('./out/experiment_ui/responses.jsonl') as reader:
+    for line in reader:
+        MOCK_RESPONSE = line
+        break
+
+if 'MOCK_QUERY_RESPONSE_SLEEP' in os.environ:
+    MOCK_SLEEP = int(os.environ['MOCK_QUERY_RESPONSE_SLEEP'])
+else:
+    MOCK_SLEEP = 5
 
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.INFO)
@@ -59,9 +76,21 @@ def document(title: str, ticker: str, document_type: str, year: str):
 
 @app.post("/query_model")
 def query_model(body: dict):
+    # Return mock if mock mode is True
+    if MOCK_MODE in BOOLEAN_TRUE_VALUES:
+        time.sleep(MOCK_SLEEP)
+        return MOCK_RESPONSE
+
+    # Validate known pipeline
+    if body['pipeline'] not in PIPELINES:
+        raise HTTPException(status_code=400, detail=f'Bad request. Unknown Pipeline {body["pipeline"]}')
+
     # Loading the model
-    model = load_model(body['model'])
-    logger.info(f'Loaded model {body["model"]}')
+    try:
+        model = load_model(body['model'])
+        logger.debug(f'Loaded model {body["model"]}')
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
     doc: Document = Document(
@@ -74,7 +103,7 @@ def query_model(body: dict):
     )
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    logger.info(
+    logger.debug(
         f"Loaded document {body['document']['title']} {body['document']['document_type']} {body['document']['year']}")
 
     # Chunk text
@@ -83,11 +112,7 @@ def query_model(body: dict):
         chunk_overlap=CHUNK_OVERLAP[body['model']]
     )
     chunks = doc.get_chunks(text_splitter)
-    logger.info(f"Document has been split into {len(chunks)} chunks")
-
-    # Validate known pipeline
-    if body['pipeline'] not in PIPELINES:
-        raise HTTPException(status_code=400, detail=f'Bad request. Unknown Pipeline {body["pipeline"]}')
+    logger.debug(f"Document has been split into {len(chunks)} chunks")
 
     # Do summarize pipeline
     logger.info(f"Querying pipeline {body['pipeline']}")
@@ -101,22 +126,17 @@ def query_model(body: dict):
     if not pipeline_outputs:
         raise HTTPException(status_code=503, detail="Summarization request returned no response.")
 
-    # Print intermediate steps
-    # for k, v in pipeline_outputs.items():
-    #     logging.info(f'{v}')
-    logger.info(f"Got response.")
-
-    for k, v in pipeline_outputs.items():
-        logger.info(f"{k}: {len(v)}")
+    logger.debug(f"Got response.")
 
     response: dict = {
         'time': datetime.now(),
         'query': body,
         'pipeline_outputs': pipeline_outputs
     }
+
     # write output to file
     with jsonlines.open('./out/experiment_ui/responses.jsonl', 'a') as writer:
-        writer.write(str(response))
+        writer.write(jsonable_encoder(response))
 
     # Return final output
     return response
