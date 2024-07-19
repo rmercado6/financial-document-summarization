@@ -5,6 +5,7 @@ import time
 
 from pathlib import Path
 from datetime import datetime
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,11 +21,14 @@ from src.summarization.constants import CHUNK_SIZE, CHUNK_OVERLAP, PIPELINES
 BOOLEAN_TRUE_VALUES = (1, 1.0, '1', '1.0', 'true', 'yes', 'y', 'on')
 
 MOCK_MODE = os.environ['MOCK_QUERY_RESPONSE'].lower()
-MOCK_RESPONSE = {}
-with jsonlines.open('./out/experiment_ui/responses.jsonl') as reader:
-    for line in reader:
-        MOCK_RESPONSE = line
-        break
+MOCK_RESPONSE = None
+try:
+    with jsonlines.open('./out/experiment_ui/responses.jsonl') as reader:
+        for line in reader:
+            MOCK_RESPONSE = line
+            break
+except FileNotFoundError:
+    MOCK_RESPONSE = None
 
 if 'MOCK_QUERY_RESPONSE_SLEEP' in os.environ:
     MOCK_SLEEP = int(os.environ['MOCK_QUERY_RESPONSE_SLEEP'])
@@ -76,8 +80,9 @@ def document(title: str, ticker: str, document_type: str, year: str):
 
 @app.post("/query_model")
 def query_model(body: dict):
+    global MOCK_RESPONSE
     # Return mock if mock mode is True
-    if MOCK_MODE in BOOLEAN_TRUE_VALUES:
+    if MOCK_MODE in BOOLEAN_TRUE_VALUES and MOCK_RESPONSE:
         time.sleep(MOCK_SLEEP)
         return MOCK_RESPONSE
 
@@ -129,6 +134,7 @@ def query_model(body: dict):
     logger.debug(f"Got response.")
 
     response: dict = {
+        'uuid': uuid4(),
         'time': datetime.now(),
         'query': body,
         'pipeline_outputs': pipeline_outputs
@@ -137,6 +143,9 @@ def query_model(body: dict):
     # write output to file
     with jsonlines.open('./out/experiment_ui/responses.jsonl', 'a') as writer:
         writer.write(jsonable_encoder(response))
+
+    if MOCK_MODE in BOOLEAN_TRUE_VALUES and not MOCK_RESPONSE:
+        MOCK_RESPONSE = response
 
     # Return final output
     return response
