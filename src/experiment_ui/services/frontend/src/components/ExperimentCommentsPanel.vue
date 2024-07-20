@@ -53,7 +53,7 @@ const new_comment = ref('');
 }
 
 .comment {
-    @apply flex flex-col text-sm p-2 bg-slate-50 border border-slate-300 rounded-md;
+    @apply flex flex-col text-sm p-2 bg-slate-50 border border-slate-300 rounded-md font-mono;
 }
 
 .date {
