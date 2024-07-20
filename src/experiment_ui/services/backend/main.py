@@ -161,9 +161,9 @@ def query_model(body: dict):
     logger.info(f"Querying pipeline {body['pipeline']}")
     pipeline_outputs = None
     if body['pipeline'] == 'refine':
-        pipeline_outputs = refine(model, chunks, True)
+        pipeline_outputs = refine(model, chunks, True, question_prompt=body['prompt_1'], refine_prompt=body['prompt_2'])
     elif body['pipeline'] == 'mapreduce':
-        pipeline_outputs = map_reduce(model, chunks, True)
+        pipeline_outputs = map_reduce(model, chunks, True, map_prompt=body['prompt_1'], combine_prompt=body['prompt_2'])
 
     # Log outputs
     if not pipeline_outputs:
