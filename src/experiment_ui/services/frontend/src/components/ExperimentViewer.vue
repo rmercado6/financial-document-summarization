@@ -31,7 +31,10 @@ function get_model_response() {
 }
 
 function get_prompt() {
-    if (active_step.value >= 0) {
+    if (props.experiment.query.pipeline === 'refine' && active_step.value === 0) {
+        return props.experiment.query.question_prompt
+    }
+    if (props.experiment.query.pipeline === 'mapreduce' && active_step.value >= 0) {
         return props.experiment.query.question_prompt
     }
     return props.experiment.query.refine_prompt
