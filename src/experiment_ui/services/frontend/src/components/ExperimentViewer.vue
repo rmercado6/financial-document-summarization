@@ -3,6 +3,7 @@ import PipelineStep from "@/components/PipelineStep.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
 import {ref, watch} from "vue";
+import ExperimentCommentsPanel from "@/components/ExperimentCommentsPanel.vue";
 
 const props = defineProps({
     experiment: Object
@@ -61,7 +62,7 @@ watch(stepsPanel, (new_value, old_value) => {
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
-            <div class="steps-panel" ref="stepsPanel">
+            <div v-bind:class="!showComments ? 'w-1/5 steps-panel' : 'w-1/6 steps-panel'" ref="stepsPanel">
                 <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
                               :i="(index + 1).toString()" :input_doc="x.page_content"
                               v-bind:active="active_step === index"
@@ -103,13 +104,14 @@ watch(stepsPanel, (new_value, old_value) => {
                     </div>
                 </div>
             </div>
+            <ExperimentCommentsPanel v-if="showComments" :uuid="experiment.uuid" class="w-1/4"></ExperimentCommentsPanel>
         </div>
     </div>
 </template>
 
 <style scoped>
 .steps-panel {
-    @apply w-1/5 overflow-x-hidden overflow-y-auto divide-y;
+    @apply overflow-x-hidden overflow-y-auto divide-y;
 }
 
 .content-panel {
@@ -125,10 +127,10 @@ watch(stepsPanel, (new_value, old_value) => {
 }
 .comments-btn {
     @apply w-10 aspect-square p-2 rounded-full border bg-slate-50 border-slate-700 text-slate-700;
-    @apply hover:bg-blue-200 hover:border-blue-900 hover:text-blue-900;
+    @apply hover:bg-blue-200 hover:border-blue-900 hover:text-blue-900 hover:cursor-pointer;
 }
 .comments-btn.active{
     @apply bg-blue-100 border-blue-700 text-blue-700;
-    @apply hover:bg-blue-200 hover:border-blue-900 hover:text-blue-900;
+    @apply hover:bg-blue-200 hover:border-blue-900 hover:text-blue-900 hover:cursor-pointer;
 }
 </style>
