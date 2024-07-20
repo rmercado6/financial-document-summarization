@@ -8,17 +8,17 @@ const props = defineProps({
 
 const experimentComments = useExperimentCommentsStore();
 
-// TODO: replace comments with fetch from API
-const comments = ref([
-    {date: 'date', content: 'sample content'},
-    {date: 'date', content: 'sample content'},
-]);
-
 const new_comment = ref('');
 
 onMounted(() => {
     experimentComments.fetch_comments(props.uuid)
 })
+
+function post_comment(){
+    if (new_comment.value.trim() !== ''){
+        experimentComments.post_comment(props.uuid, new_comment.value)
+    }
+}
 </script>
 
 <template>
@@ -29,18 +29,18 @@ onMounted(() => {
         <div v-if="!experimentComments.loading" class="comments-section">
             <div class="comment" v-for="c in experimentComments.comments">
                 <span class="content">{{c.text}}</span>
-                <span class="date">{{c.datetime}}</span>
+                <span class="date">{{(new Date(c.datetime).toLocaleString())}}</span>
             </div>
         </div>
         <div class="input-section">
             <textarea rows="7"
                       class="resize-none overflow-y-scroll overflow-x-hidden border border-slate-300
                              rounded-md p-2 font-mono text-sm"
-                      :value="new_comment">
+                      v-model="new_comment">
             </textarea>
             <div class="flex justify-end text-sm font-mono">
                 <span class="bg-blue-100 border border-blue-600 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-200
-                             hover:text-blue-800 hover:border-blue-800 hover:cursor-pointer">
+                             hover:text-blue-800 hover:border-blue-800 hover:cursor-pointer" @click="post_comment">
                     Comment
                 </span>
             </div>
@@ -67,7 +67,7 @@ onMounted(() => {
 }
 
 .date {
-    @apply text-xs font-mono content-center text-end text-slate-400;
+    @apply text-xs font-mono content-center text-end text-slate-400 pt-2;
 }
 
 .content {

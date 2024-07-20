@@ -18,5 +18,24 @@ export const useExperimentCommentsStore = defineStore(
                 })
         }
 
-        return {comments, fetch_comments}
+        async function post_comment(uuid, text) {
+            await fetch('/api/comment', {
+                method: 'POST',
+                body: JSON.stringify({
+                    document_uuid: uuid,
+                    text: text
+                }),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            }).then(response =>
+                !response.ok
+                    ? Promise.reject(response)
+                    : Promise.resolve(response.json())
+            ).then(data => {
+                comments.value.unshift(data);
+            })
+        }
+
+        return {comments, fetch_comments, post_comment}
     })
