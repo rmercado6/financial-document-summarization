@@ -2,13 +2,16 @@
 import PipelineStepPanel from "@/components/PipelineStepPanel.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
-import {ref} from "vue";
+import {onMounted, ref, watch} from "vue";
 
 const props = defineProps({
     experiment: Object
 })
 
 const active_step = ref(-1);
+
+const stepsPanel = ref(null);
+const finalStep = ref(null);
 
 function get_input_doc() {
     if (active_step.value >= 0) {
@@ -31,6 +34,12 @@ function get_prompt() {
     return props.experiment.query.refine_prompt
 }
 
+watch(stepsPanel, (new_value, old_value) => {
+    new_value.scrollTo({
+        top: new_value.scrollHeight,
+        behavior: 'smooth'
+    });
+})
 
 </script>
 
@@ -50,13 +59,13 @@ function get_prompt() {
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
-            <div class="steps-panel">
+            <div class="steps-panel" ref="stepsPanel">
                 <PipelineStepPanel v-for="(x, index) in experiment.pipeline_outputs.input_documents"
                                    :i="(index + 1).toString()"
                                    v-bind:class="active_step === index ? 'step active' : 'step inactive'"
                                    :input_doc="x.page_content" @click="active_step = index"></PipelineStepPanel>
                 <PipelineStepPanel :i="''" v-bind:class="active_step === -1 ? 'step active' : 'step inactive'"
-                                   :input_doc="'FINAL ANSWER'"
+                                   :input_doc="'FINAL ANSWER'" ref="finalStep"
                                    @click="active_step = -1"></PipelineStepPanel>
             </div>
             <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
