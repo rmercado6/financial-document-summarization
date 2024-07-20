@@ -5,7 +5,7 @@ import theme from "tailwindcss/defaultTheme.js";
 export const useExperimentStore = defineStore(
     'experiment',
     () => {
-        const experiment = ref({});
+        const experiment = ref();
 
         async function fetch_experiment(uuid) {
             await fetch('/api/experiments/' + uuid)

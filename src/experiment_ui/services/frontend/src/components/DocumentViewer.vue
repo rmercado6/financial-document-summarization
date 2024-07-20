@@ -16,7 +16,7 @@ const plain_text = ref(false);
              @click="plain_text = !plain_text">
             Aa
         </div>
-        <MarkdownRender v-if="!plain_text"
+        <MarkdownRender v-if="!plain_text" class="h-full w-full"
                         :text="text">
         </MarkdownRender>
         <textarea v-if="plain_text" readonly

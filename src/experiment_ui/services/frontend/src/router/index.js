@@ -24,7 +24,7 @@ const router = createRouter({
             component: () => import('../views/DocumentView.vue')
         },
         {
-            path: '/doc/:uuid',
+            path: '/experiment/:uuid',
             name: 'experiment',
             props: true,
             component: () => import('../views/ExperimentView.vue')
@@ -32,7 +32,12 @@ const router = createRouter({
         {
             path: '/query/response',
             name: 'query_response',
-            component: () => import('../views/QueryResponseView.vue')
+            component: () => import('../views/QueryResponseView.vue'),
+            beforeEnter: (to, from) => {
+                if (from.name === 'experiment'){
+                    return false
+                }
+            }
         }
     ]
 })

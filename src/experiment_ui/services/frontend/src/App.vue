@@ -2,11 +2,11 @@
 </script>
 
 <template>
-    <div class="flex flex-col w-full flex-grow py-5 px-7 rounded-3xl bg-white shadow-lg shadow-slate-300 border border-slate-200 overflow-y-hidden">
-        <header>
+    <div class="flex flex-col h-full w-full rounded-3xl bg-white shadow-lg shadow-slate-400 border border-slate-400 overflow-y-hidden overflow-x-hidden">
+        <header class="border-b border-slate-200 px-3 py-4 bg-slate-50">
             <div class="wrapper">
-                <nav class="flex my-1 pb-3 gap-3">
-                    <h1 class="flex-grow text-3xl">Experiment UI</h1>
+                <nav class="flex gap-3">
+                    <h1 class="flex-grow text-3xl text-blue-900">LLM Summarization Experiment Tracker</h1>
                     <RouterLink to="/">
                         <div class="router_link">
                             <div class="icon">

@@ -8,7 +8,7 @@ const props = defineProps({
     experiment: Object
 })
 
-const active_step = ref(0);
+const active_step = ref(-1);
 
 function get_input_doc() {
     if (active_step.value >= 0) {
@@ -30,11 +30,13 @@ function get_prompt() {
     }
     return props.experiment.query.refine_prompt
 }
+
+
 </script>
 
 <template>
-    <div class="flex flex-col overflow-y-hidden overflow-x-hidden border border-slate-300 h-full w-full rounded-lg divide-y divide-slate-300">
-        <div class="flex gap-4 pb-2 bg-slate-50 text-sm p-2">
+    <div v-if="experiment" class="flex flex-col overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
+        <div class="flex gap-4 pb-2 bg-slate-50 text-sm p-2 px-3">
             <DocumentDetail :title="experiment.query.document.title"
                             :ticker="experiment.query.document.ticker"
                             :document_type="experiment.query.document.document_type"
@@ -61,7 +63,7 @@ function get_prompt() {
                 <div class="flex p-1 bg-slate-50 border-b border-slate-200">
                         <textarea
                             class="flex-grow resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200 rounded-md text-sm py-1 px-2"
-                            rows="3" :value="get_prompt()"></textarea>
+                            rows="4" :value="get_prompt()"></textarea>
                 </div>
                 <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x divide-slate-200">
                     <div v-if="active_step >= 0" class="content-panel">
@@ -83,7 +85,7 @@ function get_prompt() {
 
 <style scoped>
 .steps-panel {
-    @apply w-1/4 overflow-x-hidden overflow-y-auto divide-y;
+    @apply w-1/5 overflow-x-hidden overflow-y-auto divide-y;
 }
 
 .content-panel {

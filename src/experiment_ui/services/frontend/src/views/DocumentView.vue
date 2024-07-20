@@ -15,10 +15,10 @@ const display_prompt_form = ref(false);
 </script>
 
 <template>
-    <div class="flex gap-4 max-h-full h-full overflow-y-hidden">
+    <div class="flex gap-4 max-h-full h-full overflow-y-hidden m-4">
         <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden">
             <div class="flex">
-                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year" oneline>
+                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year">
                 </DocumentDetail>
                 <div class="flex-grow flex justify-end">
                     <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">
@@ -48,7 +48,7 @@ const display_prompt_form = ref(false);
 }
 
 .hide-btn {
-    @apply absolute -left-8 z-0 mt-3 p-3 text-center content-center;
+    @apply absolute -left-8 z-0 mt-3 p-3 text-center content-center bg-slate-50;
     @apply border-y border-l rounded-md border-slate-300 text-slate-500;
     @apply hover:cursor-pointer hover:bg-slate-100 hover:text-slate-700 hover:border-slate-700;
 }

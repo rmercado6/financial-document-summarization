@@ -62,6 +62,16 @@ def load_document_from_dataset(title: str, ticker: str, document_type: str, year
     return doc
 
 
+def load_experiment_from_file(uuid: str) -> dict:
+    exp = None
+    with jsonlines.open('./out/experiment_ui/responses.jsonl') as r:
+        for _ in r:
+            if _['uuid'] == uuid:
+                exp = _
+                break
+    return exp
+
+
 @app.get("/documents")
 def documents():
     docs = []
@@ -87,6 +97,11 @@ def experiments():
 @app.get("/documents/{title}/{ticker}/{document_type}/{year}")
 def document(title: str, ticker: str, document_type: str, year: str):
     return load_document_from_dataset(title, ticker, document_type, year)
+
+
+@app.get("/experiments/{uuid}")
+def experiment(uuid: str):
+    return load_experiment_from_file(uuid)
 
 
 @app.post("/query_model")
