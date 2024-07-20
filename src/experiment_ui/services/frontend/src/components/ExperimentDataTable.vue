@@ -33,10 +33,6 @@ function selectExperiment() {
     })
 }
 
-function getDocumentName(doc) {
-    return doc.title + ' [' + doc.ticker + '] '
-}
-
 onMounted(() => {
     loading.value = false;
 });

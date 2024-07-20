@@ -15,12 +15,12 @@ const store = useQueryLLMs();
 
 const model = ref('llama');
 const pipeline = ref('refine');
-const question_prompt = ref(
+const prompt_1 = ref(
     'Please provide a summary of the following text.\n' +
     'TEXT: {text}\n' +
     'SUMMARY:'
 );
-const refine_prompt = ref(
+const prompt_2 = ref(
     'Write a concise summary of the following text delimited by triple backquotes.\n' +
     'Return your response in bullet points which covers the key points of the text.\n' +
     '```{text}```\n' +
@@ -31,8 +31,8 @@ function query_model() {
     store.query_model({
         model: model.value,
         pipeline: pipeline.value,
-        question_prompt: question_prompt.value,
-        refine_prompt: refine_prompt.value,
+        prompt_1: prompt_1.value,
+        prompt_2: prompt_2.value,
         document: {
             title: props.title,
             year: props.year,
@@ -67,18 +67,18 @@ function query_model() {
                 <h4>Pipeline</h4>
                 <div class="flex gap-2">
                     <span v-bind:class="pipeline === 'refine' ? 'select-pill active' : 'select-pill inactive'"
-                          @click="model = 'refine'">Refine</span>
+                          @click="pipeline = 'refine'">Refine</span>
                     <span v-bind:class="pipeline === 'mapreduce' ? 'select-pill active' : 'select-pill inactive'"
-                          @click="model = 'mapreduce'">MapReduce</span>
+                          @click="pipeline = 'mapreduce'">MapReduce</span>
                 </div>
             </div>
             <div>
-                <h4>Question Prompt</h4>
-                <textarea class="prompt-input" rows="7" v-model="question_prompt"></textarea>
+                <h4 v-html="pipeline === 'refine' ? 'Question Prompt' : 'Map Prompt'"></h4>
+                <textarea class="prompt-input" rows="7" v-model="prompt_1"></textarea>
             </div>
             <div>
-                <h4>Refine Prompt</h4>
-                <textarea class="prompt-input" rows="7" v-model="refine_prompt"></textarea>
+                <h4 v-html="pipeline === 'refine' ? 'Refine Prompt' : 'Combine Prompt'"></h4>
+                <textarea class="prompt-input" rows="7" v-model="prompt_2"></textarea>
             </div>
             <div class="flex justify-end">
                 <span class="btn" @click="query_model">

@@ -10,13 +10,7 @@ export const useQueryLLMs = defineStore(
 
         let query_model = async params => {
             querying.value = true;
-            query.value = {
-                model: params.model,
-                pipeline: params.pipeline,
-                question_prompt: params.question_prompt,
-                refine_prompt: params.refine_prompt,
-                document: params.document
-            }
+            query.value = params
 
             await fetch('/api/query_model', {
                 method: 'POST',

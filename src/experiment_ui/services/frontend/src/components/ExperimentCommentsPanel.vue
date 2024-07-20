@@ -28,6 +28,9 @@ function post_comment(){
             loading comments...
         </div>
         <div v-if="!experimentComments.loading" class="comments-section">
+            <div v-if="experimentComments.comments.length === 0" class="text-center py-2 h-full w-full font-mono text-slate-400 text-xs">
+                 - NO COMMENTS -
+            </div>
             <div class="comment" v-for="c in experimentComments.comments">
                 <span class="content">{{c.text}}</span>
                 <span class="date">{{(new Date(c.datetime).toLocaleString())}}</span>

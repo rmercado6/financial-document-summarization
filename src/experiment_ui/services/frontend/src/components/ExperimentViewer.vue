@@ -32,12 +32,12 @@ function get_model_response() {
 
 function get_prompt() {
     if (props.experiment.query.pipeline === 'refine' && active_step.value === 0) {
-        return props.experiment.query.question_prompt
+        return props.experiment.query.prompt_1
     }
     if (props.experiment.query.pipeline === 'mapreduce' && active_step.value >= 0) {
-        return props.experiment.query.question_prompt
+        return props.experiment.query.prompt_1
     }
-    return props.experiment.query.refine_prompt
+    return props.experiment.query.prompt_2
 }
 
 watch(stepsPanel, (new_value, old_value) => {
@@ -50,7 +50,7 @@ watch(stepsPanel, (new_value, old_value) => {
 </script>
 
 <template>
-    <div v-if="experiment" class="flex flex-col overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
+    <div v-if="experiment" class="flex flex-col h-full w-full overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
         <div class="flex gap-4 pb-2 bg-slate-50 text-sm p-2 px-3">
             <DocumentDetail :title="experiment.query.document.title"
                             :ticker="experiment.query.document.ticker"
