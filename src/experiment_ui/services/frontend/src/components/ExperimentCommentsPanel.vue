@@ -1,9 +1,12 @@
 <script setup>
-import {ref} from "vue";
+import {onBeforeMount, onMounted, ref} from "vue";
+import {useExperimentCommentsStore} from "@/stores/experiment_comments.js";
 
 const props = defineProps({
     uuid: String
 })
+
+const experimentComments = useExperimentCommentsStore();
 
 // TODO: replace comments with fetch from API
 const comments = ref([
@@ -12,14 +15,21 @@ const comments = ref([
 ]);
 
 const new_comment = ref('');
+
+onMounted(() => {
+    experimentComments.fetch_comments(props.uuid)
+})
 </script>
 
 <template>
     <div class="comments-panel">
-        <div class="comments-section">
-            <div class="comment" v-for="c in comments">
-                <span class="content">{{c.content}}</span>
-                <span class="date">{{c.date}}</span>
+        <div v-if="experimentComments.loading" class="comments-section">
+            loading comments...
+        </div>
+        <div v-if="!experimentComments.loading" class="comments-section">
+            <div class="comment" v-for="c in experimentComments.comments">
+                <span class="content">{{c.text}}</span>
+                <span class="date">{{c.datetime}}</span>
             </div>
         </div>
         <div class="input-section">
