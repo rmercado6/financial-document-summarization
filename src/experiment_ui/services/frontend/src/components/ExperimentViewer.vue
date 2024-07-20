@@ -1,5 +1,5 @@
 <script setup>
-import PipelineStepPanel from "@/components/PipelineStepPanel.vue";
+import PipelineStep from "@/components/PipelineStep.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
 import {onMounted, ref, watch} from "vue";
@@ -60,13 +60,13 @@ watch(stepsPanel, (new_value, old_value) => {
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
             <div class="steps-panel" ref="stepsPanel">
-                <PipelineStepPanel v-for="(x, index) in experiment.pipeline_outputs.input_documents"
-                                   :i="(index + 1).toString()"
-                                   v-bind:class="active_step === index ? 'step active' : 'step inactive'"
-                                   :input_doc="x.page_content" @click="active_step = index"></PipelineStepPanel>
-                <PipelineStepPanel :i="''" v-bind:class="active_step === -1 ? 'step active' : 'step inactive'"
-                                   :input_doc="'FINAL ANSWER'" ref="finalStep"
-                                   @click="active_step = -1"></PipelineStepPanel>
+                <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
+                                   :i="(index + 1).toString()" :input_doc="x.page_content"
+                                   v-bind:active="active_step === index"
+                                    @click="active_step = index"></PipelineStep>
+                <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
+                                   v-bind:active="active_step === -1"
+                                   @click="active_step = -1"></PipelineStep>
             </div>
             <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
                 <div class="flex p-1 bg-slate-50 border-b border-slate-200">
