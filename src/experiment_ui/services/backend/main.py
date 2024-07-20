@@ -17,7 +17,6 @@ from src.summarization.document import Document
 from src.summarization.pipelines import refine, map_reduce
 from src.summarization.constants import CHUNK_SIZE, CHUNK_OVERLAP, PIPELINES
 
-
 BOOLEAN_TRUE_VALUES = (1, 1.0, '1', '1.0', 'true', 'yes', 'y', 'on')
 
 MOCK_MODE = os.environ['MOCK_QUERY_RESPONSE'].lower()
@@ -39,6 +38,7 @@ logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.INFO)
 
 Path('./out/experiment_ui').mkdir(parents=True, exist_ok=True)
+Path('./out/experiment_ui/comments.jsonl').touch()
 
 app = FastAPI()
 
@@ -92,6 +92,18 @@ def experiments():
             _.pop('pipeline_outputs')
             experiments.append(_)
     return experiments
+
+
+@app.get("/comments/{document_uuid}")
+def comments(document_uuid: str):
+    comments_list = []
+    with jsonlines.open('./out/experiment_ui/comments.jsonl') as r:
+        for _ in r:
+            logger.info(_)
+            if _['document_uuid'] == document_uuid:
+                comments_list.append(_)
+    comments_list.sort(key=lambda x: x['datetime'], reverse=True)
+    return comments_list
 
 
 @app.get("/documents/{title}/{ticker}/{document_type}/{year}")
@@ -175,3 +187,15 @@ def query_model(body: dict):
 
     # Return final output
     return response
+
+
+@app.post("/comment")
+def post_comment(body: dict):
+    comment = {
+        'document_uuid': body['document_uuid'],
+        'datetime': datetime.now(),
+        'text': body['text'],
+    }
+    with jsonlines.open('./out/experiment_ui/comments.jsonl', 'a') as _:
+        _.write(jsonable_encoder(comment))
+    return comment
