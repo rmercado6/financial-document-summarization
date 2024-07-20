@@ -55,10 +55,15 @@ watch(stepsPanel, (new_value, old_value) => {
                             :year="experiment.query.document.year"
                             class="flex-1" oneline></DocumentDetail>
             <div class="flex gap-2">
-                <div class="flex-1 content-center text-end"><span
-                    class="detail-pill">{{experiment.query.model}}</span></div>
-                <div class="flex-1 content-center text-end"><span
-                    class="detail-pill">{{experiment.query.pipeline}}</span></div>
+                <div class="content-center">
+                    <span class="detail-pill">{{experiment.query.model}}</span>
+                </div>
+                <div class="content-center">
+                    <span class="detail-pill">{{experiment.query.pipeline}}</span>
+                </div>
+                <div class="content-center">
+                    <span class="detail-pill">{{(new Date(experiment.time)).toLocaleString()}}</span>
+                </div>
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
@@ -128,7 +133,7 @@ watch(stepsPanel, (new_value, old_value) => {
 }
 
 .detail-pill {
-    @apply font-mono px-2 py-1 border border-slate-600 bg-white text-slate-700 rounded-md;
+    @apply font-mono text-xs px-2 py-1 border border-slate-600 bg-white text-slate-700 rounded-md;
 }
 
 .comments-btn {

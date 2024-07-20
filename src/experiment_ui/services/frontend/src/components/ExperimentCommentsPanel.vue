@@ -1,5 +1,5 @@
 <script setup>
-import {onBeforeMount, onMounted, ref} from "vue";
+import {onMounted, ref} from "vue";
 import {useExperimentCommentsStore} from "@/stores/experiment_comments.js";
 
 const props = defineProps({
@@ -18,6 +18,7 @@ function post_comment(){
     if (new_comment.value.trim() !== ''){
         experimentComments.post_comment(props.uuid, new_comment.value)
     }
+    new_comment.value = '';
 }
 </script>
 
