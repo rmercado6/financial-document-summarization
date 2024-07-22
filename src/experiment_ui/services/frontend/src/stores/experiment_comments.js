@@ -5,7 +5,7 @@ import theme from "tailwindcss/defaultTheme.js";
 export const useExperimentCommentsStore = defineStore(
     'experiment_comments',
     () => {
-        const comments = ref();
+        const comments = ref([]);
         const loading = ref(false);
 
         async function fetch_comments(uuid) {
