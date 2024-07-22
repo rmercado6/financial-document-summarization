@@ -9,7 +9,6 @@ from pymupdf import pymupdf
 from .scrape_request import ScrapeRequest
 from src.data_crawler.constants import LOGGER_NAME
 
-
 logger = logging.getLogger(LOGGER_NAME)
 
 
@@ -24,15 +23,24 @@ class ScrapeResponse:
     __further_requests: list[ScrapeRequest] or None
     __reset_count: int
 
-    def __init__(self, scrape_request: ScrapeRequest):
-        self.__request = scrape_request
-        self.__content = scrape_request.response.content
-        self.__metadata = scrape_request.metadata.copy()
-        if 'method' not in self.__metadata:
-            self.__metadata['method'] = 'GET'
-        self.__data = None
-        self.__further_requests = None
-        self.__reset_count = 0
+    def __init__(
+            self,
+            scrape_request: ScrapeRequest or None = None,
+            metadata: dict or None = None,
+            data: str or None = None
+    ):
+        if scrape_request:
+            self.__request = scrape_request
+            self.__content = scrape_request.response.content
+            self.__metadata = scrape_request.metadata.copy()
+            if 'method' not in self.__metadata:
+                self.__metadata['method'] = 'GET'
+            self.__data = None
+            self.__further_requests = None
+            self.__reset_count = 0
+        else:
+            self.__metadata = metadata
+            self.__data = data
 
     @property
     def request(self):

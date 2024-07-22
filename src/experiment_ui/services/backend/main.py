@@ -18,11 +18,20 @@ from src.summarization.pipelines import refine, map_reduce
 from src.summarization.constants import CHUNK_SIZE, CHUNK_OVERLAP, PIPELINES
 
 BOOLEAN_TRUE_VALUES = (1, 1.0, '1', '1.0', 'true', 'yes', 'y', 'on')
+DATA_PATH = './data/'
+RESPONSES_FILE = 'experiment_responses.jsonl'
+COMMENTS_FILE = 'experiment_comments.jsonl'
+DOCUMENTS_FILE = 'documents.jsonl'
+
+Path(DATA_PATH).mkdir(parents=True, exist_ok=True)
+Path(DATA_PATH + RESPONSES_FILE).touch()
+Path(DATA_PATH + COMMENTS_FILE).touch()
+Path(DATA_PATH + DOCUMENTS_FILE).touch()
 
 MOCK_MODE = os.environ['MOCK_QUERY_RESPONSE'].lower()
 MOCK_RESPONSE = None
 try:
-    with jsonlines.open('./out/experiment_ui/responses.jsonl') as reader:
+    with jsonlines.open(DATA_PATH + RESPONSES_FILE) as reader:
         for line in reader:
             MOCK_RESPONSE = line
             break
@@ -37,9 +46,6 @@ else:
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.INFO)
 
-Path('./out/experiment_ui').mkdir(parents=True, exist_ok=True)
-Path('./out/experiment_ui/comments.jsonl').touch()
-
 app = FastAPI()
 
 app.add_middleware(
@@ -53,7 +59,7 @@ app.add_middleware(
 
 def load_document_from_dataset(title: str, ticker: str, document_type: str, year: str) -> dict:
     doc = None
-    with jsonlines.open('./out/data-crawler/data.jsonl') as reader:
+    with jsonlines.open(DATA_PATH + DOCUMENTS_FILE) as reader:
         for line in reader:
             if line['title'] == title and line['ticker'] == ticker \
                     and line['document_type'] == document_type and year == str(line['year']):
@@ -64,7 +70,7 @@ def load_document_from_dataset(title: str, ticker: str, document_type: str, year
 
 def load_experiment_from_file(uuid: str) -> dict:
     exp = None
-    with jsonlines.open('./out/experiment_ui/responses.jsonl') as r:
+    with jsonlines.open(DATA_PATH + RESPONSES_FILE) as r:
         for _ in r:
             if _['uuid'] == uuid:
                 exp = _
@@ -75,7 +81,7 @@ def load_experiment_from_file(uuid: str) -> dict:
 @app.get("/documents")
 def documents():
     docs = []
-    with jsonlines.open('./out/data-crawler/data.jsonl') as r:
+    with jsonlines.open(DATA_PATH + DOCUMENTS_FILE) as r:
         for _ in r:
             # line['preview'] = line.pop('doc')[:100]
             _.pop('doc')
@@ -86,7 +92,7 @@ def documents():
 @app.get("/experiments")
 def experiments():
     experiments = []
-    with jsonlines.open('./out/experiment_ui/responses.jsonl') as r:
+    with jsonlines.open(DATA_PATH + RESPONSES_FILE) as r:
         for _ in r:
             # line['preview'] = line.pop('doc')[:100]
             _.pop('pipeline_outputs')
@@ -97,7 +103,7 @@ def experiments():
 @app.get("/comments/{document_uuid}")
 def comments(document_uuid: str):
     comments_list = []
-    with jsonlines.open('./out/experiment_ui/comments.jsonl') as r:
+    with jsonlines.open(DATA_PATH + COMMENTS_FILE) as r:
         for _ in r:
             logger.info(_)
             if _['document_uuid'] == document_uuid:
@@ -108,12 +114,18 @@ def comments(document_uuid: str):
 
 @app.get("/documents/{title}/{ticker}/{document_type}/{year}")
 def document(title: str, ticker: str, document_type: str, year: str):
-    return load_document_from_dataset(title, ticker, document_type, year)
+    doc = load_document_from_dataset(title, ticker, document_type, year)
+    if not doc:
+        raise HTTPException(404, 'Document not found.')
+    return doc
 
 
 @app.get("/experiments/{uuid}")
 def experiment(uuid: str):
-    return load_experiment_from_file(uuid)
+    exp = load_experiment_from_file(uuid)
+    if not exp:
+        raise HTTPException(404, f'Experiment with UUID {uuid} not found.')
+    return exp
 
 
 @app.post("/query_model")
@@ -136,16 +148,15 @@ def query_model(body: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
-    doc: Document = Document(
-        load_document_from_dataset(
-            body['document']['title'],
-            body['document']['ticker'],
-            body['document']['document_type'],
-            body['document']['year']
-        )
+    d = load_document_from_dataset(
+        body['document']['title'],
+        body['document']['ticker'],
+        body['document']['document_type'],
+        body['document']['year']
     )
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    if not d:
+        raise HTTPException(status_code=404, detail=f'Document not found.')
+    doc: Document = Document(d)
     logger.debug(
         f"Loaded document {body['document']['title']} {body['document']['document_type']} {body['document']['year']}")
 
@@ -179,7 +190,7 @@ def query_model(body: dict):
     }
 
     # write output to file
-    with jsonlines.open('./out/experiment_ui/responses.jsonl', 'a') as writer:
+    with jsonlines.open(DATA_PATH + RESPONSES_FILE, 'a') as writer:
         writer.write(jsonable_encoder(response))
 
     if MOCK_MODE in BOOLEAN_TRUE_VALUES and not MOCK_RESPONSE:
@@ -196,6 +207,6 @@ def post_comment(body: dict):
         'datetime': datetime.now(),
         'text': body['text'],
     }
-    with jsonlines.open('./out/experiment_ui/comments.jsonl', 'a') as _:
+    with jsonlines.open(DATA_PATH + COMMENTS_FILE, 'a') as _:
         _.write(jsonable_encoder(comment))
     return comment

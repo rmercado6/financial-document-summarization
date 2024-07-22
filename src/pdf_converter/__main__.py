@@ -1,40 +1,75 @@
 import jsonlines
+import httpx
 import pymupdf
 import pymupdf4llm
-# import httpx
+import asyncio
 
-# from io import BytesIO
+from pathlib import Path
+from io import BytesIO
 
-from src.data_crawler.scrape_requests.requests import ScrapeResponse
+from src.pdf_converter.cli import get_args
+from src.data_crawler.scrape_requests import ScrapeResponse
+
+DEFAULT_OUTPUT_PATH = './data'
 
 
-data: bytes
-metadata: dict
+async def main(
+        path: str,
+        title: str,
+        ticker: str,
+        document_type: str,
+        year: str,
+        output_path: str = DEFAULT_OUTPUT_PATH,
+        remote: bool = False,
+):
+    data: bytes
+    metadata: dict
 
-# REMOTE FILES
-# url = 'https://www.annualreports.com/HostedData/AnnualReportArchive/1/LSE_SPA_2022.pdf'
-# response = httpx.get(url)
-# byte_stream = BytesIO(response.content)
-# doc = pymupdf.open(stream=byte_stream)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
 
-# LOCAL FILES
-doc = pymupdf.open('tests/mocks/pdf_converter/annual report.pdf')
-md_text = pymupdf4llm.to_markdown(doc)
+    if not remote:
+        doc = pymupdf.open(path)
+    else:
+        response = httpx.get(path)
+        byte_stream = BytesIO(response.content)
+        doc = pymupdf.open(stream=byte_stream)
 
-data = md_text.encode()
-metadata = {    # Build fake metadata
-    'src': '',
-    'data_type': '',
-    'url_append': '',
-    'share': {
-        'title': '',
-        'ticker': '',
-        'identifier': '',
-    },
-    'year': '',
-}
+    md_text = pymupdf4llm.to_markdown(doc)
 
-response = ScrapeResponse(metadata=metadata, data=data)
+    data = md_text.encode()
+    metadata = {  # Build metadata
+        'src': path,
+        'data_type': document_type,
+        'url_append': '',
+        'share': {
+            'title': title,
+            'ticker': ticker,
+            'identifier': '',
+        },
+        'year': year,
+    }
 
-with jsonlines.open('out/pdf_converter/file.jsonl', 'a') as _:
-    _.write(response.jsonl())
+    response = ScrapeResponse(metadata=metadata, data=data)
+
+    output_file = 'documents.jsonl'
+
+    if not output_path.endswith('/'):
+        output_file = '/' + output_file
+
+    with jsonlines.open(output_path + output_file, 'a') as _:
+        _.write(await response.jsonl())
+
+
+if __name__ == '__main__':
+    args = get_args()
+    asyncio.run(
+        main(
+            args.path,
+            args.title,
+            args.ticker,
+            args.document_type,
+            args.year,
+            output_path=args.output,
+            remote=args.remote
+        )
+    )
