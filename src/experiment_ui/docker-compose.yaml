@@ -20,7 +20,7 @@ services:
   frontend:
     restart: always
     env_file:
-      - .env
+      - ./../../.env
     build: ./services/frontend
     ports:
       - 8000:8000
