@@ -70,14 +70,19 @@ watch(stepsPanel, (new_value, old_value) => {
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
-            <div v-bind:class="!showComments ? 'w-1/5 steps-panel' : 'w-1/6 steps-panel'" ref="stepsPanel">
-                <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
-                              :i="(index + 1).toString()" :input_doc="x.page_content"
-                              v-bind:active="active_step === index"
-                              @click="active_step = index"></PipelineStep>
-                <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
-                              v-bind:active="active_step === -1"
-                              @click="active_step = -1"></PipelineStep>
+            <div class="flex flex-col overflow-x-hidden overflow-y-hidden">
+                <span class="text-center py-1 bg-slate-50 border border-slate-200 font-semibold">
+                    Steps
+                </span>
+                <div class="steps-panel" ref="stepsPanel">
+                    <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
+                                  :i="(index + 1).toString()" :input_doc="x.page_content"
+                                  v-bind:active="active_step === index"
+                                  @click="active_step = index"></PipelineStep>
+                    <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
+                                  v-bind:active="active_step === -1"
+                                  @click="active_step = -1"></PipelineStep>
+                </div>
             </div>
             <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
                 <div class="flex p-1 bg-slate-50 border-b border-slate-200">
@@ -124,7 +129,7 @@ watch(stepsPanel, (new_value, old_value) => {
 
 <style scoped>
 .steps-panel {
-    @apply overflow-x-hidden overflow-y-auto divide-y;
+    @apply overflow-x-hidden overflow-y-auto divide-y min-w-28;
 }
 
 .content-panel {
