@@ -103,7 +103,32 @@ python -m src.data_insight
 # summarization
 python -m src.summarization
 
+# pdf_converter
+python -m src.pdf_converter args
+
 ```
+
+##### pdf converter arguments
+The `pdf_converter` requires some arguments as the information stored from file should be tied to a company.
+
+The arguments the module require are: 
+```text
+usage: __main__.py [-h] [--output OUTPUT] [-r] path title ticker document_type year
+
+positional arguments:
+  path             path of the file to be converted.
+  title            title of the company to whom the file refers to.
+  ticker           ticker of the company to whom the file refers to.
+  document_type    document type of the file to be converted.
+  year             year in which the document was published or to which it refers to.
+
+options:
+  -h, --help       show this help message and exit
+  --output OUTPUT  The output path in where to place the output data.jsonl file.
+  -r, --remote     Whether or not the path belongs to a remote file url.
+
+```
+
 
 ### Web Application
 
