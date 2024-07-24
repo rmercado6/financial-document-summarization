@@ -86,6 +86,7 @@ def documents():
             # line['preview'] = line.pop('doc')[:100]
             _.pop('doc')
             docs.append(_)
+    docs.sort(key=lambda x: x['title'].lower())
     return docs
 
 
