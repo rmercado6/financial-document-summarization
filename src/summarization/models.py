@@ -55,7 +55,8 @@ def load_model(model_name: str):
 
     # Load GPT
     if model_name == 'gpt':
-        return load_openai_model("gpt-4-turbo")
+        # return load_openai_model("gpt-4o-mini")
+        return load_openai_model("gpt-4o-mini-2024-07-18")
 
     # Load any other Huggingface model, defaults to llama
     __model: str = "meta-llama/Meta-Llama-3-8B-Instruct"
