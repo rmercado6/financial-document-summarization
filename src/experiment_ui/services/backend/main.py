@@ -148,12 +148,7 @@ def query_model(body: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
-    d = load_document_from_dataset(
-        body['document']['title'],
-        body['document']['ticker'],
-        body['document']['document_type'],
-        body['document']['year']
-    )
+    d = load_document_from_dataset(**body['document'])
     if not d:
         raise HTTPException(status_code=404, detail=f'Document not found.')
     doc: Document = Document(d)
@@ -193,6 +188,9 @@ def query_model(body: dict):
     with jsonlines.open(DATA_PATH + RESPONSES_FILE, 'a') as writer:
         writer.write(jsonable_encoder(response))
 
+    response['original_doc'] = d
+
+    # set mock response if there was none
     if MOCK_MODE in BOOLEAN_TRUE_VALUES and not MOCK_RESPONSE:
         MOCK_RESPONSE = response
 
