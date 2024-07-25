@@ -8,7 +8,6 @@ const props = defineProps({
     text: String
 })
 
-const rendered_md = md.render(props.text)
 const plain_text = ref(false);
 </script>
 
@@ -18,7 +17,7 @@ const plain_text = ref(false);
              @click="plain_text = !plain_text">
             Aa
         </div>
-        <div v-if="!plain_text" class="overflow-y-scroll overflow-x-clip h-full p-3 markdown-body" v-html="rendered_md">
+        <div v-if="!plain_text" class="overflow-y-scroll overflow-x-clip h-full p-3 markdown-body" v-html="md.render(props.text)">
         </div>
         <textarea v-if="plain_text" readonly
                   class="p-3 overflow-y-scroll overflow-x-clip resize-none flex-grow h-full w-full rounded-md
