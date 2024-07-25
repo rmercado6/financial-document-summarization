@@ -1,8 +1,9 @@
 <script setup>
+import {ref, watch} from "vue";
+
 import PipelineStep from "@/components/PipelineStep.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
-import {ref, watch} from "vue";
 import ExperimentCommentsPanel from "@/components/ExperimentCommentsPanel.vue";
 
 const props = defineProps({
