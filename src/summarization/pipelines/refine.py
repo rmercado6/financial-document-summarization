@@ -1,7 +1,9 @@
 from typing import Optional
 
+from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import PromptTemplate
 from langchain.chains.summarize import load_summarize_chain
+from langchain_openai import OpenAIEmbeddings
 
 # Prompts
 initial_prompt_template: str = """Context information is below.
@@ -27,7 +29,8 @@ def refine(
         return_intermediate_steps: bool = False,
         initial_prompt: str = initial_prompt_template,
         refine_prompt: str = refine_prompt_template,
-        task: Optional[str] = 'make a summary'
+        task: Optional[str] = 'make a summary',
+        similarity_filter: bool = False
 ):
     """
     The function executes the langchain refine pipeline for summarising
@@ -38,15 +41,18 @@ def refine(
     :arg initial_prompt: the prompt to use for the question step
     :arg refine_prompt:  the prompt to use for the refine steps
     :arg task: the main task, goal or question for the model to achieve through the pipeline
+    :arg similarity_filter: whether to use a similarity filter
 
     :return: summarised output for the documents
     """
-    # initial_prompt.replace('{task}', task)
-    # refine_prompt.replace('{task', task)
-    #
-    # print(initial_prompt)
-    # print(refine_prompt)
+    # Do similarity filter
+    if similarity_filter and task:
+        db = Chroma.from_documents(input_documents, OpenAIEmbeddings())
+        docs = db.similarity_search(task)
+    else:
+        docs = input_documents
 
+    # Build prompts
     __question_prompt = PromptTemplate(
         template=initial_prompt.replace('{task}', task),
         input_variables=["text"]
@@ -56,6 +62,7 @@ def refine(
         input_variables=["text", "existing_answer"]
     )
 
+    # Load the refine chain
     refine_chain = load_summarize_chain(
         model,
         chain_type="refine",
@@ -64,4 +71,5 @@ def refine(
         return_intermediate_steps=return_intermediate_steps,
     )
 
-    return refine_chain.invoke({"input_documents": input_documents})
+    # Call the refine pipeline and return the output
+    return refine_chain.invoke({"input_documents": docs})
