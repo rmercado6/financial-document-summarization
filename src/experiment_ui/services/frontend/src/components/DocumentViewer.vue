@@ -1,12 +1,14 @@
 <script setup>
-
-import MarkdownRender from "@/components/MarkdownRender.vue";
+import markdownit from 'markdown-it'
 import {ref} from "vue";
 
-defineProps({
+const md = markdownit()
+
+const props = defineProps({
     text: String
 })
 
+const rendered_md = md.render(props.text)
 const plain_text = ref(false);
 </script>
 
@@ -16,11 +18,11 @@ const plain_text = ref(false);
              @click="plain_text = !plain_text">
             Aa
         </div>
-        <MarkdownRender v-if="!plain_text" class="h-full w-full"
-                        :text="text">
-        </MarkdownRender>
+        <div v-if="!plain_text" class="overflow-y-scroll overflow-x-clip h-full p-3 markdown-body" v-html="rendered_md">
+        </div>
         <textarea v-if="plain_text" readonly
-                  class="p-3 overflow-y-scroll overflow-x-clip resize-none flex-grow h-full rounded-md h-full w-full cursor-default focus:outline-none "
+                  class="p-3 overflow-y-scroll overflow-x-clip resize-none flex-grow h-full w-full rounded-md
+                         cursor-default focus:outline-none"
                   :value="text">
                     </textarea>
     </div>
