@@ -86,7 +86,13 @@ watch(stepsPanel, (new_value, old_value) => {
                 </div>
             </div>
             <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
-                <div class="flex p-1 bg-slate-50 border-b border-slate-200">
+                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2" v-if="props.experiment.query.task">
+                    <span class="content-center text-sm font-semibold w-1/12 text-right">Task: </span>
+                    <div class="flex-1 overflow-x-clip overflow-y-auto font-mono border border-slate-200 bg-white
+                                     rounded-md text-sm py-1 px-2" rows="2" >{{props.experiment.query.task}}</div>
+                </div>
+                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2">
+                    <span class="content-center text-sm font-semibold w-1/12 text-right">Prompt: </span>
                     <textarea class="flex-1 resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200
                                      rounded-md text-sm py-1 px-2" rows="4" :value="get_prompt()"></textarea>
                     <div class="flex items-center p-3 relative">
