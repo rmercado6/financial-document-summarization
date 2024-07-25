@@ -1,27 +1,33 @@
+from typing import Optional
+
 from langchain_core.prompts import PromptTemplate
 from langchain.chains.summarize import load_summarize_chain
 
-# Refine prompts
-question_prompt_template = """
-                  Please provide a summary of the following text.
-                  TEXT: {text}
-                  SUMMARY:
-                  """
+# Prompts
+initial_prompt_template: str = """Context information is below.
+---------------------
+{text}
+---------------------
+Given the context information and no prior knowledge, {task}:"""
 
-refine_prompt_template = """
-              Write a concise summary of the following text delimited by triple backquotes.
-              Return your response in bullet points which covers the key points of the text.
-              ```{text}```
-              BULLET POINT SUMMARY:
-              """
+refine_prompt_template: str = """The task is to {task}.
+We have provided an initial summary: {existing_answer}
+We have the opportunity to refine the existing summary
+(only if needed) with some more context below.
+------------
+{text}
+------------
+Given the new context, refine the original summary to better fit the task.
+You must provide a response, either the initial summary or refined summary."""
 
 
 def refine(
         model,
         input_documents: list,
         return_intermediate_steps: bool = False,
-        question_prompt: str = question_prompt_template,
+        initial_prompt: str = initial_prompt_template,
         refine_prompt: str = refine_prompt_template,
+        task: Optional[str] = 'make a summary'
 ):
     """
     The function executes the langchain refine pipeline for summarising
@@ -29,13 +35,26 @@ def refine(
     :arg model: the langauge model on which summarization would be done on
     :arg input_documents: list of the pages on which summarization would work on
     :arg return_intermediate_steps: if True, the intermediate steps will be included in the response,
-    :arg question_prompt: the prompt to use for the question step
+    :arg initial_prompt: the prompt to use for the question step
     :arg refine_prompt:  the prompt to use for the refine steps
+    :arg task: the main task, goal or question for the model to achieve through the pipeline
 
     :return: summarised output for the documents
     """
-    __question_prompt = PromptTemplate(template=question_prompt, input_variables=["text"])
-    __refine_prompt = PromptTemplate(template=refine_prompt, input_variables=["text"])
+    # initial_prompt.replace('{task}', task)
+    # refine_prompt.replace('{task', task)
+    #
+    # print(initial_prompt)
+    # print(refine_prompt)
+
+    __question_prompt = PromptTemplate(
+        template=initial_prompt.replace('{task}', task),
+        input_variables=["text"]
+    )
+    __refine_prompt = PromptTemplate(
+        template=refine_prompt.replace('{task}', task),
+        input_variables=["text", "existing_answer"]
+    )
 
     refine_chain = load_summarize_chain(
         model,
