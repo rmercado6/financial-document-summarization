@@ -168,7 +168,15 @@ def query_model(body: dict):
     logger.info(f"Querying pipeline {body['pipeline']}")
     pipeline_outputs = None
     if body['pipeline'] == 'refine':
-        pipeline_outputs = refine(model, chunks, True, question_prompt=body['prompt_1'], refine_prompt=body['prompt_2'])
+        pipeline_outputs = refine(
+            model,
+            chunks,
+            True,
+            initial_prompt=body['prompt_1'],
+            refine_prompt=body['prompt_2'],
+            similarity_filter=body['similarity_filter'],
+            task=body['task'],
+        )
     elif body['pipeline'] == 'mapreduce':
         pipeline_outputs = map_reduce(model, chunks, True, map_prompt=body['prompt_1'], combine_prompt=body['prompt_2'])
 
