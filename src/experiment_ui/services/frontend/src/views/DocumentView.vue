@@ -4,7 +4,7 @@ import DocumentPreview from "@/components/DocumentPreview.vue";
 import PromptForm from "@/components/PromptForm.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 
-const props = defineProps({
+defineProps({
     title: String,
     ticker: String,
     year: String,
