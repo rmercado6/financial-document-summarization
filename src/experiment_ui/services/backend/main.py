@@ -86,6 +86,7 @@ def documents():
             # line['preview'] = line.pop('doc')[:100]
             _.pop('doc')
             docs.append(_)
+    docs.sort(key=lambda x: x['title'].lower())
     return docs
 
 
@@ -148,12 +149,7 @@ def query_model(body: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
-    d = load_document_from_dataset(
-        body['document']['title'],
-        body['document']['ticker'],
-        body['document']['document_type'],
-        body['document']['year']
-    )
+    d = load_document_from_dataset(**body['document'])
     if not d:
         raise HTTPException(status_code=404, detail=f'Document not found.')
     doc: Document = Document(d)
@@ -172,7 +168,15 @@ def query_model(body: dict):
     logger.info(f"Querying pipeline {body['pipeline']}")
     pipeline_outputs = None
     if body['pipeline'] == 'refine':
-        pipeline_outputs = refine(model, chunks, True, question_prompt=body['prompt_1'], refine_prompt=body['prompt_2'])
+        pipeline_outputs = refine(
+            model,
+            chunks,
+            True,
+            initial_prompt=body['prompt_1'],
+            refine_prompt=body['prompt_2'],
+            similarity_filter=body['similarity_filter'],
+            task=body['task'],
+        )
     elif body['pipeline'] == 'mapreduce':
         pipeline_outputs = map_reduce(model, chunks, True, map_prompt=body['prompt_1'], combine_prompt=body['prompt_2'])
 
@@ -193,6 +197,9 @@ def query_model(body: dict):
     with jsonlines.open(DATA_PATH + RESPONSES_FILE, 'a') as writer:
         writer.write(jsonable_encoder(response))
 
+    response['original_doc'] = d
+
+    # set mock response if there was none
     if MOCK_MODE in BOOLEAN_TRUE_VALUES and not MOCK_RESPONSE:
         MOCK_RESPONSE = response
 

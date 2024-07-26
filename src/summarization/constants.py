@@ -1,5 +1,5 @@
 CHUNK_SIZE = {
-    'gpt': 10000,
+    'gpt': 100000,
     'llama': 8000,
     'mistral': 32000,
 }

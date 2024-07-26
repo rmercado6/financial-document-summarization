@@ -1,13 +1,9 @@
 <script setup>
-import MarkdownRender from "@/components/MarkdownRender.vue";
-
-
 import {useDocumentStore} from "@/stores/document.js";
 import {onMounted, ref} from "vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
 
 const loading = ref(true);
-// const plain_text = ref(false);
 const documentStore = useDocumentStore();
 const props = defineProps({
     title: String,

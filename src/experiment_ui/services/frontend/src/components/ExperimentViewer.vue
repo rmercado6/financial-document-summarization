@@ -1,8 +1,9 @@
 <script setup>
+import {ref, watch} from "vue";
+
 import PipelineStep from "@/components/PipelineStep.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
 import DocumentViewer from "@/components/DocumentViewer.vue";
-import {ref, watch} from "vue";
 import ExperimentCommentsPanel from "@/components/ExperimentCommentsPanel.vue";
 
 const props = defineProps({
@@ -70,17 +71,28 @@ watch(stepsPanel, (new_value, old_value) => {
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
-            <div v-bind:class="!showComments ? 'w-1/5 steps-panel' : 'w-1/6 steps-panel'" ref="stepsPanel">
-                <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
-                              :i="(index + 1).toString()" :input_doc="x.page_content"
-                              v-bind:active="active_step === index"
-                              @click="active_step = index"></PipelineStep>
-                <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
-                              v-bind:active="active_step === -1"
-                              @click="active_step = -1"></PipelineStep>
+            <div class="flex flex-col overflow-x-hidden overflow-y-hidden">
+                <span class="text-center py-1 bg-slate-50 border border-slate-200 font-semibold">
+                    Steps
+                </span>
+                <div class="steps-panel" ref="stepsPanel">
+                    <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
+                                  :i="(index + 1).toString()" :input_doc="x.page_content"
+                                  v-bind:active="active_step === index"
+                                  @click="active_step = index"></PipelineStep>
+                    <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
+                                  v-bind:active="active_step === -1"
+                                  @click="active_step = -1"></PipelineStep>
+                </div>
             </div>
             <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
-                <div class="flex p-1 bg-slate-50 border-b border-slate-200">
+                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2" v-if="props.experiment.query.task">
+                    <span class="content-center text-sm font-semibold w-1/12 text-right">Task: </span>
+                    <div class="flex-1 overflow-x-clip overflow-y-auto font-mono border border-slate-200 bg-white
+                                     rounded-md text-sm py-1 px-2" rows="2" >{{props.experiment.query.task}}</div>
+                </div>
+                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2">
+                    <span class="content-center text-sm font-semibold w-1/12 text-right">Prompt: </span>
                     <textarea class="flex-1 resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200
                                      rounded-md text-sm py-1 px-2" rows="4" :value="get_prompt()"></textarea>
                     <div class="flex items-center p-3 relative">
@@ -124,7 +136,7 @@ watch(stepsPanel, (new_value, old_value) => {
 
 <style scoped>
 .steps-panel {
-    @apply overflow-x-hidden overflow-y-auto divide-y;
+    @apply overflow-x-hidden overflow-y-auto divide-y min-w-28;
 }
 
 .content-panel {

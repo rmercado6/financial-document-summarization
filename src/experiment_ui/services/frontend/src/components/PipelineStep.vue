@@ -15,14 +15,15 @@ function get_class(){
 
 <template>
 <div v-bind:class="get_class()">
-    <span v-if="i !== ''" class="content-center">{{i}}</span>
-    <span class="line-clamp-3 text-sm">{{input_doc}}</span>
+    <span v-if="i !== ''">{{i}}</span>
+    <span v-if="i === ''">Final</span>
+<!--    <span class="line-clamp-3 text-sm">{{input_doc.substring(0, 20) + '...'}}</span>-->
 </div>
 </template>
 
 <style scoped>
 .step {
-    @apply flex gap-4 py-2 px-4;
+    @apply py-2 px-6 text-right;
 }
 .step.inactive {
     @apply hover:bg-blue-50 hover:cursor-pointer;

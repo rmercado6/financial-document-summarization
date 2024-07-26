@@ -14,7 +14,7 @@ RUN echo "VITE_SEARCH_API_URL=${SEARCH_API_URL}" > .env
 
 COPY . .
 
-RUN npm run build
+CMD ["npm", "run", "build"]
 
 EXPOSE ${PORT}
 

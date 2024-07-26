@@ -1,6 +1,5 @@
-import {ref, computed} from 'vue'
+import {ref} from 'vue'
 import {defineStore} from 'pinia'
-import theme from "tailwindcss/defaultTheme.js";
 
 export const useDocumentStore = defineStore(
     'document',
