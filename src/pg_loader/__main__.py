@@ -25,27 +25,30 @@ def load_config(filename='database.ini', section='postgresql'):
     return config
 
 
-def insert_document(document):
-    """ Insert a new vendor into the vendors table """
-
-    sql = """INSERT INTO documents(title, ticker, year, document_type, doc, tokens) VALUES(%s, %s, %s, %s, %s, %s);"""
-
+def execute_query(query: str, values: tuple):
     config = load_config()
 
     try:
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
                 # execute the INSERT statement
-                cur.execute(sql, document)
+                cur.execute(query, tuple)
 
                 # commit the changes to the database
                 conn.commit()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        print(document[:4])
 
 
-def update_document_add_src_url(document):
+def insert_document(values):
+    """ Insert a new vendor into the vendors table """
+
+    sql = """INSERT INTO documents(title, ticker, year, document_type, doc, tokens) VALUES(%s, %s, %s, %s, %s, %s);"""
+
+    execute_query(sql, values)
+
+
+def update_document_add_src_url(values):
     """ Insert a new vendor into the vendors table """
 
     sql = """UPDATE documents SET src_url = %s 
@@ -55,19 +58,7 @@ def update_document_add_src_url(document):
              year = %s AND
              document_type = %s;"""
 
-    config = load_config()
-
-    try:
-        with psycopg2.connect(**config) as conn:
-            with conn.cursor() as cur:
-                # execute the INSERT statement
-                cur.execute(sql, document)
-
-                # commit the changes to the database
-                conn.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        print(document[:4])
+    execute_query(sql, values)
 
 
 def get_doc_size(document):
