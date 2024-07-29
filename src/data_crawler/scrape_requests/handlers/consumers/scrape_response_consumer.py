@@ -44,10 +44,10 @@ class ScrapeResponseConsumer(AsyncTask):
 
                 tasks = await asyncio.gather(scrape_response.jsonl())
                 jsonline = tasks[0]
-                if jsonline["doc"] is not None:
+                if jsonline["document_type"] != "None":
                     async with writer_lock:
                         try:
-                            with jsonlines.open('./out/data-crawler/data.jsonl', 'a') as _:
+                            with jsonlines.open('./out/data-crawler/sources.jsonl', 'a') as _:
                                 _.write(jsonline)
                         except Exception as e:
                             raise e

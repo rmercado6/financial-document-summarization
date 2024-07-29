@@ -149,5 +149,7 @@ class ScrapeResponse:
             'ticker': self.metadata['share']['ticker'],
             'year': self.metadata['year'] if 'year' in self.metadata.keys() else None,
             'document_type': self.metadata['data_type'],
-            'doc': await self.document,
+            # 'doc': await self.document,
+            'src_url': self.url,
+            'metadata': self.metadata
         }
