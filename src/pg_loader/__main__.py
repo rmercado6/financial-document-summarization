@@ -30,7 +30,6 @@ def insert_document(document):
 
     sql = """INSERT INTO documents(title, ticker, year, document_type, doc, tokens) VALUES(%s, %s, %s, %s, %s, %s);"""
 
-    vendor_id = None
     config = load_config()
 
     try:
@@ -44,8 +43,31 @@ def insert_document(document):
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
         print(document[:4])
-    finally:
-        return vendor_id
+
+
+def update_document_add_src_url(document):
+    """ Insert a new vendor into the vendors table """
+
+    sql = """UPDATE documents SET src_url = %s 
+             WHERE
+             title = %s AND
+             ticker = %s AND
+             year = %s AND
+             document_type = %s;"""
+
+    config = load_config()
+
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                # execute the INSERT statement
+                cur.execute(sql, document)
+
+                # commit the changes to the database
+                conn.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        print(document[:4])
 
 
 def get_doc_size(document):
@@ -54,7 +76,11 @@ def get_doc_size(document):
 
 if __name__ == '__main__':
     file: Optional[tuple] = None
-    with jsonlines.open('./data/documents.jsonl') as reader:
-        for line in reader:
-            line['tokens'] = get_doc_size(line['doc'])
-            insert_document(tuple(line.values()))
+    with jsonlines.open('./out/data-crawler/sources.jsonl') as sources:
+        for s in sources:
+            update_document_add_src_url((s["src_url"], s["title"], s["ticker"], str(s["year"]), s["document_type"]))
+    #
+    # with jsonlines.open('./data/documents.jsonl') as reader:
+    #     for line in reader:
+    #         line['tokens'] = get_doc_size(line['doc'])
+    #         insert_document(tuple(line.values()))
