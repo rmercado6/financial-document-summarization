@@ -7,10 +7,12 @@ from pathlib import Path
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from langchain_text_splitters.markdown import MarkdownTextSplitter
+
+from src.experiment_ui.services.backend.config.pg_config import Database
 
 from src.summarization.models import load_model
 from src.summarization.document import Document
@@ -43,29 +45,41 @@ if 'MOCK_QUERY_RESPONSE_SLEEP' in os.environ:
 else:
     MOCK_SLEEP = 5
 
-logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('uvicorn')
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-def load_document_from_dataset(title: str, ticker: str, document_type: str, year: str) -> dict:
-    doc = None
-    with jsonlines.open(DATA_PATH + DOCUMENTS_FILE) as reader:
-        for line in reader:
-            if line['title'] == title and line['ticker'] == ticker \
-                    and line['document_type'] == document_type and year == str(line['year']):
-                doc = line
-                break
-    return doc
+@app.on_event("startup")
+async def startup_event():
+    database_instance = Database()
+    await database_instance.connect()
+    app.state.db = database_instance
+    logger.info("Server Startup")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if not app.state.db:
+        await app.state.db.close()
+    logger.info("Server Shutdown")
+
+
+async def load_document_from_dataset(request: Request, title: str, ticker: str, document_type: str, year: str) -> dict:
+    doc = await request.app.state.db.fetch_rows(f"""
+        SELECT * from documents
+        WHERE title = '{title}' AND ticker = '{ticker}' AND document_type = '{document_type}' AND year = '{year}';
+        """)
+    return doc[0]
 
 
 def load_experiment_from_file(uuid: str) -> dict:
@@ -79,13 +93,10 @@ def load_experiment_from_file(uuid: str) -> dict:
 
 
 @app.get("/documents")
-def documents():
-    docs = []
-    with jsonlines.open(DATA_PATH + DOCUMENTS_FILE) as r:
-        for _ in r:
-            # line['preview'] = line.pop('doc')[:100]
-            _.pop('doc')
-            docs.append(_)
+async def documents(request: Request):
+    docs = await request.app.state.db.fetch_rows("""
+    SELECT document_id, title, ticker, document_type, year, tokens, src_url from documents;
+    """)
     docs.sort(key=lambda x: x['title'].lower())
     return docs
 
@@ -114,8 +125,8 @@ def comments(document_uuid: str):
 
 
 @app.get("/documents/{title}/{ticker}/{document_type}/{year}")
-def document(title: str, ticker: str, document_type: str, year: str):
-    doc = load_document_from_dataset(title, ticker, document_type, year)
+async def document(request: Request, title: str, ticker: str, document_type: str, year: str):
+    doc = await load_document_from_dataset(request, title, ticker, document_type, year)
     if not doc:
         raise HTTPException(404, 'Document not found.')
     return doc
@@ -130,7 +141,7 @@ def experiment(uuid: str):
 
 
 @app.post("/query_model")
-def query_model(body: dict):
+async def query_model(request: Request, body: dict):
     global MOCK_RESPONSE
     # Return mock if mock mode is True
     if MOCK_MODE in BOOLEAN_TRUE_VALUES and MOCK_RESPONSE:
@@ -149,7 +160,7 @@ def query_model(body: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
-    d = load_document_from_dataset(**body['document'])
+    d = await load_document_from_dataset(request, **body['document'])
     if not d:
         raise HTTPException(status_code=404, detail=f'Document not found.')
     doc: Document = Document(d)
