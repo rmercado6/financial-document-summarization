@@ -6,7 +6,7 @@ import jsonlines
 import tiktoken
 
 
-tiktoken_encoding = tiktoken.encoding_for_model('gpt-4o-mini-2024-07-18')
+tiktoken_encoding = tiktoken.get_encoding('p50k_base')
 
 
 def load_config(filename='database.ini', section='postgresql'):
@@ -32,7 +32,7 @@ def execute_query(query: str, values: tuple):
         with psycopg2.connect(**config) as conn:
             with conn.cursor() as cur:
                 # execute the INSERT statement
-                cur.execute(query, tuple)
+                cur.execute(query, values)
 
                 # commit the changes to the database
                 conn.commit()
@@ -66,12 +66,12 @@ def get_doc_size(document):
 
 
 if __name__ == '__main__':
-    file: Optional[tuple] = None
+    with jsonlines.open('./data/documents.jsonl') as reader:
+        for line in reader:
+            line['tokens'] = get_doc_size(line['doc'])
+            line["doc"] = line["doc"].replace("\x00", "")
+            insert_document(tuple(line.values()))
+
     with jsonlines.open('./out/data-crawler/sources.jsonl') as sources:
         for s in sources:
             update_document_add_src_url((s["src_url"], s["title"], s["ticker"], str(s["year"]), s["document_type"]))
-    #
-    # with jsonlines.open('./data/documents.jsonl') as reader:
-    #     for line in reader:
-    #         line['tokens'] = get_doc_size(line['doc'])
-    #         insert_document(tuple(line.values()))
