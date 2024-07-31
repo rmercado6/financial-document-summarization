@@ -1,6 +1,6 @@
 <script setup>
 import markdownit from 'markdown-it'
-import {onMounted, ref} from "vue";
+import {ref} from "vue";
 
 const md = markdownit()
 
