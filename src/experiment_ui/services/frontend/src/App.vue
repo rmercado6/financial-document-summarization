@@ -2,55 +2,56 @@
 </script>
 
 <template>
-    <div class="flex flex-col h-full w-full rounded-3xl bg-white shadow-lg shadow-slate-400 border border-slate-400 overflow-y-hidden overflow-x-hidden">
-        <header class="border-b border-slate-200 px-3 py-4 bg-slate-50">
-            <div class="wrapper">
-                <nav class="flex gap-3">
-                    <h1 class="flex-grow text-3xl text-blue-900">LLM Summarization Experiment Tracker</h1>
-                    <RouterLink to="/">
-                        <div class="router_link">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                     strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round"
-                                          d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0
-                                          1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1
-                                          1.5.124m7.5 10.376h3.375c.621 0
-                                          1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0
-                                          0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125
-                                          1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0
-                                          0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0
-                                          0-3.375-3.375H9.75"/>
-                                </svg>
-                            </div>
+    <div class="flex flex-col h-full w-full bg-white overflow-y-hidden overflow-x-hidden">
+        <header class="border-b border-slate-400 px-4 py-1 bg-slate-100 z-10">
+            <nav class="flex">
+                <h1 class="flex-grow text-xl text-slate-500 font-serif font-extrabold content-center">
+                    LLM Summarization Experiment Tracker
+                </h1>
+                <RouterLink to="/">
+                    <div class="router_link group relative">
+                        <div class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 0 1 3.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0 1 21 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 0 1 7.5 16.125V3.375Z"/>
+                                <path
+                                    d="M15 5.25a5.23 5.23 0 0 0-1.279-3.434 9.768 9.768 0 0 1 6.963 6.963A5.23 5.23 0 0 0 17.25 7.5h-1.875A.375.375 0 0 1 15 7.125V5.25ZM4.875 6H6v10.125A3.375 3.375 0 0 0 9.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 0 1 3 20.625V7.875C3 6.839 3.84 6 4.875 6Z"/>
+                            </svg>
+                        </div>
+                        <span
+                            class="absolute hidden group-hover:flex px-2 py-1 bg-slate-700 rounded-lg
+                                   text-center text-white text-sm -bottom-6 right-0">
                             Documents
+                        </span>
+
+                    </div>
+                </RouterLink>
+                <RouterLink to="/history">
+                    <div class="router_link group relative">
+                        <div class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd"
+                                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z"
+                                      clip-rule="evenodd"/>
+                            </svg>
                         </div>
-                    </RouterLink>
-                    <RouterLink to="/history">
-                        <div class="router_link">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                     strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round"
-                                          d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                                </svg>
-                            </div>
+                        <span
+                            class="absolute hidden group-hover:flex px-2 py-1 bg-slate-700 rounded-lg
+                                   text-center text-white text-sm -bottom-6 right-0">
                             History
-                        </div>
-                    </RouterLink>
-                </nav>
-            </div>
+                        </span>
+                    </div>
+                </RouterLink>
+            </nav>
         </header>
         <RouterView/>
     </div>
-
-
 </template>
 
 <style scoped>
 .router_link {
     @apply flex gap-1 text-slate-600 rounded-md p-2 font-light text-sm;
-    @apply hover:text-blue-800 hover:bg-blue-100 hover:underline hover:cursor-pointer;
+    @apply hover:text-blue-800 hover:bg-white hover:underline hover:cursor-pointer;
 }
 
 .router_link .icon {

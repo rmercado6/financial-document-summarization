@@ -20,7 +20,7 @@ onMounted(async () => {
 
 <template>
     <div class="flex flex-col h-full w-full">
-        <div class="flex gap-3 my-2 pb-1 pr-3 items-center border-b border-slate-200">
+        <div class="flex gap-3 my-2 pb-1 pr-3 items-center border-b border-slate-400">
             <h3 class="text-xl px-1 grow">
                 Document preview
             </h3>
@@ -29,13 +29,13 @@ onMounted(async () => {
             loading ...
         </div>
         <div v-if="!loading" class="flex md-display">
-            <DocumentViewer :text="documentStore.document.doc"></DocumentViewer>
+            <DocumentViewer :document="documentStore.document"></DocumentViewer>
         </div>
     </div>
 </template>
 
 <style scoped>
 .md-display {
-    @apply flex-grow h-full border border-slate-200 rounded-md overflow-y-hidden overflow-x-clip;
+    @apply flex-grow h-full border border-slate-400 rounded-md overflow-y-hidden overflow-x-clip;
 }
 </style>

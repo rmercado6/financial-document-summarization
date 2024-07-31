@@ -1,57 +1,98 @@
 <script setup>
 import {ref, watch} from "vue";
 
-import PipelineStep from "@/components/PipelineStep.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
-import DocumentViewer from "@/components/DocumentViewer.vue";
 import ExperimentCommentsPanel from "@/components/ExperimentCommentsPanel.vue";
+import ExperimentContentRenderer from "@/components/ExperimentContentRenderer.vue";
+import NavitemIcon from "@/components/NavitemIcon.vue";
 
 const props = defineProps({
     experiment: Object
 })
 
-const active_step = ref(-1);
+const experiment_view = ref(null);
 
-const stepsPanel = ref(null);
-const finalStep = ref(null);
-
-const showComments = ref(false);
-
-function get_input_doc() {
-    if (active_step.value >= 0) {
-        return props.experiment.pipeline_outputs.input_documents[active_step.value].page_content
+const navigator = ref([
+    {
+        name: "Input Documents",
+        type: 'folder',
+        content: 'experiment.pipeline_outputs.input_documents',
+        open: false,
+        content_prefix: 'Document',
+        content_type: 'input_documents'
+    },
+    {
+        name: "Intermediate Steps",
+        type: 'folder',
+        content: 'experiment.pipeline_outputs.intermediate_steps',
+        open: false,
+        content_prefix: 'Output',
+        content_type: 'markdown'
+    },
+    {
+        name: "Final Response",
+        type: 'output',
+        content: 'experiment.pipeline_outputs.output_text',
+        content_type: 'markdown'
+    },
+    // {
+    //     name: "Original Input PDF/Web document",
+    //     type: 'document',
+    //     content: 'experiment.pipeline_outputs.output_text',
+    //     content_type: 'webview'
+    // },
+    // {
+    //     name: "Original Input Text",
+    //     type: 'document',
+    //     content: 'experiment.original_doc.doc',
+    //     content_type: 'markdown'
+    // },
+    {
+        name: 'Prompt Templates',
+        type: 'prompt-template',
+        content: 'experiment.query',
+        content_type: 'prompts'
     }
-    return ''
-}
+]);
 
-function get_model_response() {
-    if (active_step.value >= 0) {
-        return props.experiment.pipeline_outputs.intermediate_steps[active_step.value]
-    }
-    return props.experiment.pipeline_outputs.output_text
-}
-
-function get_prompt() {
-    if (props.experiment.query.pipeline === 'refine' && active_step.value === 0) {
-        return props.experiment.query.prompt_1
-    }
-    if (props.experiment.query.pipeline === 'mapreduce' && active_step.value >= 0) {
-        return props.experiment.query.prompt_1
-    }
-    return props.experiment.query.prompt_2
-}
-
-watch(stepsPanel, (new_value, old_value) => {
-    new_value.scrollTo({
-        top: new_value.scrollHeight,
-        behavior: 'smooth'
-    });
+const open_doc = ref({
+    name: '',
+    content: '',
+    type: ''    // webview, md, prompts
 })
 
+function click_nav_item(nav_item) {
+    if (nav_item.type === 'folder') {
+        nav_item.open = !nav_item.open
+        return
+    }
+    display_content(
+        nav_item.content.split('.').reduce((p, c) => p && p[c] || null, props),
+        nav_item.name,
+        nav_item.content_type
+    )
+}
+
+function display_content(content, name, content_type) {
+    open_doc.value.name = name;
+    if (content_type === 'input_documents') {
+        open_doc.value.content = content.page_content;
+        open_doc.value.type = 'markdown';
+        return
+    }
+
+    open_doc.value.content = content;
+    open_doc.value.type = content_type;
+}
+
+watch(experiment_view, () => {
+    click_nav_item(navigator.value[2])
+})
 </script>
 
 <template>
-    <div v-if="experiment" class="flex flex-col h-full w-full overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
+    <div v-if="experiment" ref="experiment_view"
+         class="flex flex-col h-full w-full overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
         <div class="flex gap-4 pb-2 bg-slate-50 text-sm p-2 px-3">
             <DocumentDetail :title="experiment.query.document.title"
                             :ticker="experiment.query.document.ticker"
@@ -71,93 +112,50 @@ watch(stepsPanel, (new_value, old_value) => {
             </div>
         </div>
         <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x ">
-            <div class="flex flex-col overflow-x-hidden overflow-y-hidden">
-                <span class="text-center py-1 bg-slate-50 border border-slate-200 font-semibold">
-                    Steps
-                </span>
-                <div class="steps-panel" ref="stepsPanel">
-                    <PipelineStep v-for="(x, index) in experiment.pipeline_outputs.input_documents"
-                                  :i="(index + 1).toString()" :input_doc="x.page_content"
-                                  v-bind:active="active_step === index"
-                                  @click="active_step = index"></PipelineStep>
-                    <PipelineStep :i="''" :input_doc="'FINAL ANSWER'" ref="finalStep"
-                                  v-bind:active="active_step === -1"
-                                  @click="active_step = -1"></PipelineStep>
-                </div>
-            </div>
-            <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
-                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2" v-if="props.experiment.query.task">
-                    <span class="content-center text-sm font-semibold w-1/12 text-right">Task: </span>
-                    <div class="flex-1 overflow-x-clip overflow-y-auto font-mono border border-slate-200 bg-white
-                                     rounded-md text-sm py-1 px-2" rows="2" >{{props.experiment.query.task}}</div>
-                </div>
-                <div class="flex p-1 bg-slate-50 border-b border-slate-200 gap-2">
-                    <span class="content-center text-sm font-semibold w-1/12 text-right">Prompt: </span>
-                    <textarea class="flex-1 resize-none overflow-x-clip overflow-y-auto font-mono border border-slate-200
-                                     rounded-md text-sm py-1 px-2" rows="4" :value="get_prompt()"></textarea>
-                    <div class="flex items-center p-3 relative">
-                        <span v-bind:class="!showComments ? 'comments-btn' : 'comments-btn active'"
-                              @click="showComments = !showComments">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
-                                 stroke="currentColor" className="size-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" v-if="!showComments"
-                                    d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166
-                                    2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0
-                                    1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626
-                                    2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12
-                                    3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" v-if="showComments"
-                                     strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
-                                </svg>
-                            </svg>
+            <div class="flex flex-col overflow-x-auto overflow-y-auto bg-slate-100 w-1/6 p-2
+                        font-mono text-xs text-slate-600 border-r border-slate-300">
+                <!-- Navigator -->
+                <div class="folder" v-for="nav_item in navigator">
+                    <span v-bind:class="open_doc.name === nav_item.name ? 'nav-element active' : 'nav-element'"
+                          @click="click_nav_item(nav_item)">
+                        <NavitemIcon :type="nav_item.type" :open="nav_item.open"></NavitemIcon>
+                        <span class="">
+                            {{nav_item.name}}
+                        </span>
+                    </span>
+                    <div v-if="nav_item.type === 'folder' && nav_item.open"
+                         v-for="(x, index) in nav_item.content.split('.').reduce((p,c)=>p&&p[c]||null, props)"
+                         @click="display_content(x, nav_item.content_prefix + ' ' + (index + 1), nav_item.content_type)"
+                         v-bind:class="open_doc.name === nav_item.content_prefix + ' ' + (index + 1) ? 'nav-element active !pl-4' : 'nav-element !pl-4'">
+                        <NavitemIcon
+                            :type="nav_item.content_prefix.toLowerCase() === 'output' ? 'output' : 'document'"></NavitemIcon>
+                        <span>
+                            {{nav_item.content_prefix}} {{index + 1}}
                         </span>
                     </div>
                 </div>
-                <div class="flex flex-1 overflow-y-hidden overflow-x-hidden divide-x divide-slate-200">
-                    <div v-if="active_step >= 0" class="content-panel">
-                        <span class="label">Input</span>
-                        <DocumentViewer
-                            :text="get_input_doc()">
-                        </DocumentViewer>
-                    </div>
-                    <div class="content-panel">
-                        <span class="label">Output</span>
-                        <DocumentViewer :text="get_model_response()">
-                        </DocumentViewer>
-                    </div>
-                </div>
             </div>
-            <ExperimentCommentsPanel v-if="showComments" :uuid="experiment.uuid"
-                                     class="w-1/4"></ExperimentCommentsPanel>
+            <ExperimentContentRenderer :doc="open_doc"></ExperimentContentRenderer>
+            <ExperimentCommentsPanel :uuid="experiment.uuid"></ExperimentCommentsPanel>
         </div>
     </div>
 </template>
 
 <style scoped>
-.steps-panel {
-    @apply overflow-x-hidden overflow-y-auto divide-y min-w-28;
-}
-
-.content-panel {
-    @apply flex-1 overflow-y-hidden overflow-x-hidden flex flex-col;
-}
-
-.content-panel .label {
-    @apply px-3 py-1 text-sm font-semibold border-b border-slate-200 bg-slate-50;
-}
-
 .detail-pill {
     @apply font-mono text-xs px-2 py-1 border border-slate-600 bg-white text-slate-700 rounded-md;
 }
 
-.comments-btn {
-    @apply w-10 aspect-square p-2 rounded-full bg-slate-50 text-slate-700;
-    @apply hover:bg-blue-200 hover:text-blue-900 hover:cursor-pointer;
+.folder {
+    @apply flex flex-col gap-1;
 }
 
-.comments-btn.active {
-    @apply text-slate-500 rounded-l rounded-md border-l border-y border-slate-300 bg-slate-100 absolute -right-2;
-    @apply hover:bg-blue-200 hover:text-blue-900 hover:cursor-pointer;
+.nav-element {
+    @apply flex gap-1 cursor-default py-1 px-2;
+    @apply hover:bg-slate-300
+}
+
+.nav-element.active {
+    @apply bg-blue-200 text-blue-800;
 }
 </style>
