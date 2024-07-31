@@ -29,7 +29,7 @@ onMounted(async () => {
             loading ...
         </div>
         <div v-if="!loading" class="flex md-display">
-            <DocumentViewer :text="documentStore.document.doc"></DocumentViewer>
+            <DocumentViewer :document="documentStore.document"></DocumentViewer>
         </div>
     </div>
 </template>
