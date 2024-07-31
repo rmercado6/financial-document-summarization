@@ -177,6 +177,7 @@ async def query_model(request: Request, body: dict):
 
     # Do summarize pipeline
     logger.info(f"Querying pipeline {body['pipeline']}")
+    start_time = time.time()
     pipeline_outputs = None
     if body['pipeline'] == 'refine':
         pipeline_outputs = refine(
@@ -199,6 +200,7 @@ async def query_model(request: Request, body: dict):
 
     response: dict = {
         'uuid': uuid4(),
+        'execution_time': start_time - time.time(),
         'time': datetime.now(),
         'query': body,
         'pipeline_outputs': pipeline_outputs
