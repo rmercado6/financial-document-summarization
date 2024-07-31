@@ -41,7 +41,7 @@ const display_prompt_form = ref(false);
 
             </div>
             <PromptForm :title="title" :ticker="ticker" :document_type="document_type" :year="year"
-                        class="absolute z-10 border-l border-slate-400 p-3 bg-slate-50 shadow-md shadow-slate-400"></PromptForm>
+                        class="absolute border-l border-slate-400 p-3 bg-slate-50 shadow-md shadow-slate-400"></PromptForm>
         </div>
     </div>
 </template>
