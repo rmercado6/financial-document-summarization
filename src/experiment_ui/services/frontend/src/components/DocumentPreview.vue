@@ -20,11 +20,6 @@ onMounted(async () => {
 
 <template>
     <div class="flex flex-col h-full w-full">
-        <div class="flex gap-3 my-2 pb-1 pr-3 items-center border-b border-slate-400">
-            <h3 class="text-xl px-1 grow">
-                Document preview
-            </h3>
-        </div>
         <div v-if="loading" class="md-display bg-slate-50 text-slate-600 flex justify-center items-center">
             loading ...
         </div>
@@ -36,6 +31,6 @@ onMounted(async () => {
 
 <style scoped>
 .md-display {
-    @apply flex-grow h-full border border-slate-400 rounded-md overflow-y-hidden overflow-x-clip;
+    @apply flex-grow h-full border border-slate-400 overflow-y-hidden overflow-x-clip;
 }
 </style>

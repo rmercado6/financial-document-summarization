@@ -14,24 +14,27 @@ const display = ref(0);
 <template>
     <div class="flex flex-col h-full w-full overflow-x-hidden overflow-y-hidden relative">
         <div class="flex border-b border-slate-400 py-1 px-2 text-xs font-mono items-center gap-2">
-            <div class="flex-1 overflow-y-hidden overflow-x-hidden truncate">
+            <div class="text-xs font-semibold">
+                <span>DOC PREVIEW</span>
+            </div>
+            <div class="flex-1 overflow-y-hidden overflow-x-hidden truncate border border-slate-400 px-1">
                 <span v-if="document.src_url !== null">
-                    Source
+                    SRC
                     <a :href="document.src_url" target="_blank" class="truncate">{{document.src_url}}</a>
                 </span>
             </div>
             <div v-if="document.src_url !== null"
-                 v-bind:class="display === 2 ? 'md-display-btn active' : 'md-display-btn inactive'"
+                 v-bind:class="display === 2 ? 'btn active' : 'btn'"
                  @click="display = 2">
-                Original Source
+                ORIGINAL SOURCE
             </div>
-            <div v-bind:class="display === 0 ? 'md-display-btn active' : 'md-display-btn inactive'"
+            <div v-bind:class="display === 0 ? 'btn active' : 'btn'"
                  @click="display = 0">
-                Rendered MD
+                MARKDOWN
             </div>
-            <div v-bind:class="display === 1 ? 'md-display-btn active' : 'md-display-btn inactive'"
+            <div v-bind:class="display === 1 ? 'btn active' : 'btn'"
                  @click="display = 1">
-                Plain Text
+                PLAIN TEXT
             </div>
         </div>
         <div v-if="display === 0" class="overflow-y-scroll overflow-x-clip h-full w-full p-3 markdown-body"
@@ -49,16 +52,12 @@ const display = ref(0);
 </template>
 
 <style scoped>
-.md-display-btn {
-    @apply flex justify-center items-center border rounded-md text-xs font-mono text-center p-1;
-    @apply hover:cursor-pointer hover:bg-slate-300 hover:border-slate-500 hover:text-slate-800;
+.btn {
+    @apply text-xs py-0 px-1 border border-slate-700 content-center cursor-pointer;
+    @apply hover:bg-slate-400 hover:text-slate-800;
 }
 
-.md-display-btn.inactive {
-    @apply bg-slate-50 border-slate-400 text-slate-500;
-}
-
-.md-display-btn.active {
-    @apply bg-blue-200 border-blue-400 text-blue-700;
+.btn.active {
+    @apply bg-green-200;
 }
 </style>

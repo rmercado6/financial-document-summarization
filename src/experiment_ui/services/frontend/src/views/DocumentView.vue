@@ -16,11 +16,11 @@ const display_prompt_form = ref(false);
 
 <template>
     <div class="flex max-h-full h-full overflow-y-hidden">
-        <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden p-4">
+        <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden">
             <div class="flex">
-                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year">
+                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year" class="px-3 py-1">
                 </DocumentDetail>
-                <div class="flex-grow flex justify-end">
+                <div class="flex-grow flex justify-end items-center pr-4">
                     <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">
                         Query Model
                     </span>
@@ -48,7 +48,7 @@ const display_prompt_form = ref(false);
 
 <style scoped>
 .btn {
-    @apply p-1 px-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-md h-fit;
+    @apply p-0.5 px-1 border border-blue-600 bg-blue-100 text-blue-600 rounded-md h-fit font-mono text-sm;
     @apply hover:cursor-pointer hover:bg-blue-200 hover:border-blue-900 hover:text-blue-950
 }
 

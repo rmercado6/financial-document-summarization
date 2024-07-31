@@ -23,9 +23,9 @@ watch(querying, () => {
 </script>
 
 <template>
-    <div v-if="d" class="flex flex-col h-full overflow-y-hidden overflow-x-hidden m-4">
+    <div v-if="d" class="flex flex-col h-full overflow-y-hidden overflow-x-hidden">
         <div v-if="queryLLMs.querying"
-             class="bg-slate-50 border border-slate-300 text-slate-600 rounded-md h-full w-full content-center font-mono text-sm text-center">
+             class="bg-slate-100 border border-slate-400 text-slate-600 h-full w-full content-center font-mono text-sm text-center uppercase">
             Querying model ...
         </div>
     </div>
