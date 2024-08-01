@@ -82,6 +82,11 @@ async def load_document_from_dataset(request: Request, title: str, ticker: str, 
     return doc[0]
 
 
+async def load_document_from_dataset_by_uuid(request: Request, uuid: str) -> dict:
+    doc = await request.app.state.db.fetch_rows(f"SELECT * from documents WHERE document_id = '{uuid}';")
+    return doc[0]
+
+
 def load_experiment_from_file(uuid: str) -> dict:
     exp = None
     with jsonlines.open(DATA_PATH + RESPONSES_FILE) as r:
@@ -132,11 +137,21 @@ async def document(request: Request, title: str, ticker: str, document_type: str
     return doc
 
 
+@app.get("/documents/{uuid}")
+async def document(request: Request, uuid: str):
+    doc = await load_document_from_dataset_by_uuid(request, uuid)
+    if not doc:
+        raise HTTPException(404, 'Document not found.')
+    return doc
+
+
 @app.get("/experiments/{uuid}")
-def experiment(uuid: str):
+async def experiment(request: Request, uuid: str):
     exp = load_experiment_from_file(uuid)
     if not exp:
         raise HTTPException(404, f'Experiment with UUID {uuid} not found.')
+    d = await load_document_from_dataset(request, **exp['query']['document'])
+    exp["original_document"] = d
     return exp
 
 
