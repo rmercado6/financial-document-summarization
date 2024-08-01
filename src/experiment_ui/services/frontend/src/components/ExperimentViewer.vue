@@ -35,18 +35,18 @@ const navigator = ref([
         content: 'experiment.pipeline_outputs.output_text',
         content_type: 'markdown'
     },
-    // {
-    //     name: "Original Input PDF/Web document",
-    //     type: 'document',
-    //     content: 'experiment.pipeline_outputs.output_text',
-    //     content_type: 'webview'
-    // },
-    // {
-    //     name: "Original Input Text",
-    //     type: 'document',
-    //     content: 'experiment.original_doc.doc',
-    //     content_type: 'markdown'
-    // },
+    {
+        name: "Original Input PDF/Web document",
+        type: 'webview',
+        content: 'experiment.original_document.src_url',
+        content_type: 'webview'
+    },
+    {
+        name: "Original Input Text",
+        type: 'document',
+        content: 'experiment.original_document.doc',
+        content_type: 'markdown'
+    },
     {
         name: 'Prompt Templates',
         type: 'prompt-template',

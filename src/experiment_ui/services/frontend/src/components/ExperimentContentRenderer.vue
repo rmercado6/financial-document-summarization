@@ -15,6 +15,10 @@ watch(props.doc, (old_doc, new_doc) => {
         display.value = 2;
         return
     }
+    if (new_doc.type === 'webview'){
+        display.value = 3;
+        return
+    }
     if (new_doc.type === 'markdown' && display.value > 1){
         display.value = 0;
     }
@@ -24,7 +28,7 @@ watch(props.doc, (old_doc, new_doc) => {
 <template>
     <div class="flex flex-col flex-1 overflow-y-hidden overflow-x-hidden">
         <div class="flex gap-2 bg-slate-50 font-mono text-slate-700 border-b border-slate-400 py-1 px-2 text-sm items-center">
-            <span class="flex-1">
+            <span v-if="doc.type !== 'webview'" class="flex-1">
                 {{doc.name}}
             </span>
             <span v-if="doc.type === 'markdown'" v-bind:class="display === 0 ? 'btn active' : 'btn'" @click="display = 0">
@@ -33,6 +37,13 @@ watch(props.doc, (old_doc, new_doc) => {
             <span v-if="doc.type === 'markdown'" v-bind:class="display === 1 ? 'btn active' : 'btn'" @click="display = 1">
                 PLAIN TEXT
             </span>
+            <div v-if="doc.type === 'webview'" class="flex flex-col w-full gap-1">
+                <span class="px-1">{{doc.name}}</span>
+                <span class="border border-slate-400 w-full text-xs py-0.5 px-1 bg-white">
+                    SRC
+                    <a :href="doc.content" target="_blank">{{doc.content}}</a>
+                </span>
+            </div>
         </div>
         <div v-if="display === 0" class="overflow-y-scroll overflow-x-clip h-full w-full p-3 markdown-body"
              v-html="md.render(doc.content)">
@@ -49,6 +60,9 @@ watch(props.doc, (old_doc, new_doc) => {
             <textarea readonly rows="10" v-html="doc.content.prompt_1"></textarea>
             <span class="section">Refine Prompt</span>
             <textarea readonly rows="10" v-html="doc.content.prompt_2"></textarea>
+        </div>
+        <div v-if="display === 3" class="overflow-y-hidden overflow-x-hidden h-full w-full">
+            <iframe :src="doc.content" class="w-full h-full"></iframe>
         </div>
     </div>
 </template>
