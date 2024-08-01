@@ -1,24 +1,34 @@
 <script setup>
-import {ref} from "vue";
-import DocumentPreview from "@/components/DocumentPreview.vue";
+import {onMounted, ref} from "vue";
 import PromptForm from "@/components/PromptForm.vue";
 import DocumentDetail from "@/components/DocumentDetail.vue";
+import DocumentViewer from "@/components/DocumentViewer.vue";
 
-defineProps({
-    title: String,
-    ticker: String,
-    year: String,
-    document_type: String
+import {useDocumentStore} from "@/stores/document.js";
+
+let props = defineProps({
+    document_id: String,
 })
 
+const documentStore = useDocumentStore();
+
 const display_prompt_form = ref(false);
+const loading = ref(true);
+
+onMounted(async () => {
+    await documentStore.fetch_document(props.document_id);
+    loading.value = false;
+})
 </script>
 
 <template>
     <div class="flex max-h-full h-full overflow-y-hidden">
-        <div class="flex flex-col flex-1 max-h-full h-full overflow-y-hidden">
-            <div class="flex">
-                <DocumentDetail :title="title" :ticker="ticker" :document_type="document_type" :year="year" class="px-3 py-1">
+        <div class="flex flex-col flex-1 h-full overflow-y-hidden">
+            <div v-if="!loading" class="flex">
+                <DocumentDetail :title="documentStore.document.title"
+                                :ticker="documentStore.document.ticker"
+                                :document_type="documentStore.document.document_type"
+                                :year="documentStore.document.year" class="px-3 py-1">
                 </DocumentDetail>
                 <div class="flex-grow flex justify-end items-center pr-4">
                     <span v-if="!display_prompt_form" class="btn" @click="display_prompt_form = true">
@@ -27,8 +37,13 @@ const display_prompt_form = ref(false);
                 </div>
             </div>
             <div class="mt-2 flex flex-col h-full overflow-y-hidden">
-                <DocumentPreview :title="title" :ticker="ticker" :document_type="document_type" :year="year">
-                </DocumentPreview>
+                <div v-if="loading"
+                     class="h-full w-full md-display bg-slate-50 text-slate-600 flex justify-center items-center">
+                    loading ...
+                </div>
+                <div v-if="!loading" class="flex md-display h-full w-full">
+                    <DocumentViewer :document="documentStore.document"></DocumentViewer>
+                </div>
             </div>
         </div>
         <div v-if="display_prompt_form" class="flex flex-col flex-1 relative">
@@ -40,7 +55,7 @@ const display_prompt_form = ref(false);
                 </svg>
 
             </div>
-            <PromptForm :title="title" :ticker="ticker" :document_type="document_type" :year="year"
+            <PromptForm :document_id="document_id"
                         class="absolute border-l border-slate-400 p-3 bg-slate-50 shadow-md shadow-slate-400"></PromptForm>
         </div>
     </div>

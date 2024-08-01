@@ -15,7 +15,7 @@ const router = createRouter({
             component: () => import('../views/ExperimentListView.vue')
         },
         {
-            path: '/doc/:title/:ticker/:year/:document_type',
+            path: '/document/:document_id',
             name: 'document',
             props: true,
             // route level code-splitting

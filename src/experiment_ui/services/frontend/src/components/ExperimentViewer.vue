@@ -35,18 +35,18 @@ const navigator = ref([
         content: 'experiment.pipeline_outputs.output_text',
         content_type: 'markdown'
     },
-    // {
-    //     name: "Original Input PDF/Web document",
-    //     type: 'document',
-    //     content: 'experiment.pipeline_outputs.output_text',
-    //     content_type: 'webview'
-    // },
-    // {
-    //     name: "Original Input Text",
-    //     type: 'document',
-    //     content: 'experiment.original_doc.doc',
-    //     content_type: 'markdown'
-    // },
+    {
+        name: "Original Input PDF/Web document",
+        type: 'webview',
+        content: 'experiment.original_document.src_url',
+        content_type: 'webview'
+    },
+    {
+        name: "Original Input Text",
+        type: 'document',
+        content: 'experiment.original_document.doc',
+        content_type: 'markdown'
+    },
     {
         name: 'Prompt Templates',
         type: 'prompt-template',
@@ -94,10 +94,10 @@ watch(experiment_view, () => {
     <div v-if="experiment" ref="experiment_view"
          class="flex flex-col h-full w-full overflow-y-hidden overflow-x-hidden divide-y divide-slate-300">
         <div class="flex gap-4 pb-2 bg-slate-50 text-sm p-2 px-3">
-            <DocumentDetail :title="experiment.query.document.title"
-                            :ticker="experiment.query.document.ticker"
-                            :document_type="experiment.query.document.document_type"
-                            :year="experiment.query.document.year"
+            <DocumentDetail :title="experiment.original_document.title"
+                            :ticker="experiment.original_document.ticker"
+                            :document_type="experiment.original_document.document_type"
+                            :year="experiment.original_document.year"
                             class="flex-1" oneline></DocumentDetail>
             <div class="flex gap-2">
                 <div class="content-center">
