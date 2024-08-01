@@ -40,7 +40,7 @@ onMounted(() => {
 
 <template>
     <main>
-        <DataTable v-model:filters="filters" :value="experiments" paginator :rows="9" filterDisplay="row"
+        <DataTable v-model:filters="filters" :value="experiments" paginator :rows="10" filterDisplay="row"
                    v-model:selection="selected_experiment" selectionMode="single" :metaKeySelection="false"
                    @rowSelect="selectExperiment"
                    :loading="loading"

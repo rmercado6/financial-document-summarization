@@ -38,7 +38,7 @@ onMounted(() => {
 
 <template>
     <main>
-        <DataTable v-model:filters="filters" :value="documents" paginator :rows="9" filterDisplay="row"
+        <DataTable v-model:filters="filters" :value="documents" paginator :rows="10" filterDisplay="row"
                    v-model:selection="selected_document" selectionMode="single" :metaKeySelection="false"
                    @rowSelect="selectDocument"
                    :loading="loading"
