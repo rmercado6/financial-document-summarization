@@ -5,10 +5,7 @@ import router from "@/router/index.js";
 import {useQueryLLMs} from "@/stores/query_llms.js";
 
 const props = defineProps({
-    title: String,
-    ticker: String,
-    year: String,
-    document_type: String,
+    document_id: String
 })
 
 const store = useQueryLLMs();
@@ -44,12 +41,7 @@ function query_model() {
         prompt_2: prompt_2.value,
         task: task.value,
         similarity_filter: similarity_filter.value,
-        document: {
-            title: props.title,
-            year: props.year,
-            ticker: props.ticker,
-            document_type: props.document_type,
-        }
+        document: props.document_id
     })
     router.push({name: 'query_response'})
 }

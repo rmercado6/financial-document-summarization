@@ -22,8 +22,13 @@ const filters = ref({
 
 const selected_document = ref();
 
-function selectDocument(){
-    router.push({name: 'document', params: selected_document.value})
+function selectDocument() {
+    router.push({
+        name: 'document',
+        params: {
+            document_id: selected_document.value.document_id
+        }
+    })
 }
 
 onMounted(() => {
@@ -33,7 +38,7 @@ onMounted(() => {
 
 <template>
     <main>
-        <DataTable v-model:filters="filters"  :value="documents" paginator :rows="9" filterDisplay="row"
+        <DataTable v-model:filters="filters" :value="documents" paginator :rows="9" filterDisplay="row"
                    v-model:selection="selected_document" selectionMode="single" :metaKeySelection="false"
                    @rowSelect="selectDocument"
                    :loading="loading"
