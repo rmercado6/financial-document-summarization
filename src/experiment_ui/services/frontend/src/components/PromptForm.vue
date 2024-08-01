@@ -79,8 +79,8 @@ function query_model() {
                 <div class="flex flex-1 gap-2">
                     <span v-bind:class="pipeline === 'refine' ? 'select-pill active' : 'select-pill inactive'"
                           @click="pipeline = 'refine'">Refine</span>
-                    <span v-bind:class="pipeline === 'mapreduce' ? 'select-pill active' : 'select-pill inactive'"
-                          @click="pipeline = 'mapreduce'">MapReduce</span>
+<!--                    <span v-bind:class="pipeline === 'mapreduce' ? 'select-pill active' : 'select-pill inactive'"-->
+<!--                          @click="pipeline = 'mapreduce'">MapReduce</span>-->
                 </div>
             </div>
             <div>
