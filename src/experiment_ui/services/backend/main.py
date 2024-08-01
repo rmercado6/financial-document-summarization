@@ -150,7 +150,7 @@ async def experiment(request: Request, uuid: str):
     exp = load_experiment_from_file(uuid)
     if not exp:
         raise HTTPException(404, f'Experiment with UUID {uuid} not found.')
-    d = await load_document_from_dataset(request, **exp['query']['document'])
+    d = await load_document_from_dataset_by_uuid(request, exp['query']['document'])
     exp["original_document"] = d
     return exp
 
@@ -175,12 +175,12 @@ async def query_model(request: Request, body: dict):
         raise HTTPException(status_code=400, detail=str(e))
 
     # Load document from dataset
-    d = await load_document_from_dataset(request, **body['document'])
+    d = await load_document_from_dataset_by_uuid(request, body['document'])
     if not d:
         raise HTTPException(status_code=404, detail=f'Document not found.')
     doc: Document = Document(d)
     logger.debug(
-        f"Loaded document {body['document']['title']} {body['document']['document_type']} {body['document']['year']}")
+        f"Loaded document {d['title']} {d['document_type']} {d['year']}")
 
     # Chunk text
     text_splitter = MarkdownTextSplitter(
@@ -225,7 +225,7 @@ async def query_model(request: Request, body: dict):
     with jsonlines.open(DATA_PATH + RESPONSES_FILE, 'a') as writer:
         writer.write(jsonable_encoder(response))
 
-    response['original_doc'] = d
+    response['original_document'] = d
 
     # set mock response if there was none
     if MOCK_MODE in BOOLEAN_TRUE_VALUES and not MOCK_RESPONSE:
