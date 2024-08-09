@@ -1,11 +1,12 @@
 import pandas as pd
-import jsonlines
 import logging
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-from sys import getsizeof
 from pathlib import Path
 from tabulate import tabulate
 
+from src.pg_loader import execute_fetch_query
 
 Path('./out/data-insight').mkdir(parents=True, exist_ok=True)
 
@@ -29,19 +30,16 @@ def print_section(title: str, printable) -> None:
     )
 
 
-def main():
-    print('Getting insight from data-crawler output...')
-    rows = []
-    with jsonlines.open('./out/data-crawler/data.jsonl') as reader:
-        for line in reader:
-            line['doc_size'] = getsizeof(line['doc'])
-            line.pop('doc')
-            rows.append(line)
-    df = pd.DataFrame(columns=['ticker', 'title', 'document_type', 'year', 'doc_size'], data=rows)
-    df['title'] = df['title'].apply(lambda s: s.upper())
-    # df['ticker'] = df['ticker'].apply(lambda s: s.replace('.', ' ').strip())
+def get_stats(df: pd.DataFrame):
+    logger.info(f'{" DATA INSIGHTS ":*^90}')
 
-    logger.info(f'{" DATA INSIGHTS ":*^150}')
+    # plot distribution of document size by document_type
+    sns.displot(
+        df, x="tokens", col="document_type",
+        facet_kws=dict(margin_titles=True, sharey=False),
+        log_scale=(True, False), col_wrap=2, bins=10, kde=True
+    )
+    plt.savefig('./out/data-insight/document_size_dist.png')
 
     # Print total number of documents
     print_section('Total number of collected documents:', '\t' + str(df.shape[0]))
@@ -62,7 +60,7 @@ def main():
     print_section(
         'Document file size statistics for all collected data:',
         tabulate(
-            df.aggregate({'doc_size': ['min', 'max', 'mean', 'median', 'std', 'var']}).T,
+            df.aggregate({'tokens': ['min', 'max', 'mean', 'median', 'std', 'var']}).T,
             showindex=False,
             headers=['Min', 'Max', 'Mean', 'Median', 'Standard Deviation', 'Variance'],
         )
@@ -72,18 +70,22 @@ def main():
     print_section(
         'Document file size statistics by document type:',
         tabulate(
-            df.groupby(['document_type']).aggregate({'doc_size': ['min', 'max', 'mean', 'median', 'std', 'var']}),
+            df.groupby(['document_type']).aggregate({'tokens': ['min', 'max', 'mean', 'median', 'std', 'var']}),
             headers=['Document Type', 'Min', 'Max', 'Mean', 'Median', 'Standard Deviation', 'Variance'],
         )
     )
-    df.drop(columns=['doc_size'], inplace=True)
+    df.drop(columns=['tokens'], inplace=True)
 
-    # Print amount of documents per firm
+    # Print number of documents per firm stats
+    documents_per_firm = pd.DataFrame(df.groupby(['ticker']).size(), columns=['documents'])
+    sns.displot(documents_per_firm, x='documents', kde=True)
+    plt.savefig('./out/data-insight/documents_per_firm.png')
     print_section(
-        'Number of collected documents by firm:',
+        'Collected documents by firm:',
         tabulate(
-            pd.DataFrame(df.groupby(['title']).size()),
-            headers=['Firm', 'Count'],
+            documents_per_firm.aggregate({'documents': ['min', 'max', 'mean', 'median', 'std', 'var']}).T,
+            showindex=False,
+            headers=['Min', 'Max', 'Mean', 'Median', 'Standard Deviation', 'Variance'],
         )
     )
 
@@ -99,8 +101,22 @@ def main():
         )
     )
 
-    logger.info(f'{"":*^150}')
+    logger.info(f'{"":*^90}')
+
+
+def load_data():
+    query = """
+    SELECT upper(title), ticker, document_type, year, tokens 
+    FROM documents
+    """
+    rows = execute_fetch_query(query, ())
+    df = pd.DataFrame(
+        columns=['title', 'ticker', 'document_type', 'year', 'tokens'],
+        data=rows
+    )
+
+    return df
 
 
 if __name__ == '__main__':
-    main()
+    get_stats(load_data())

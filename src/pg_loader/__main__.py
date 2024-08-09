@@ -12,6 +12,7 @@ tiktoken_encoding = tiktoken.get_encoding('p50k_base')
 def load_config(filename='database.ini', section='postgresql'):
     parser = ConfigParser()
     parser.read(filename)
+    print(parser.items())
 
     # get section, default to postgresql
     config = {}
@@ -38,6 +39,27 @@ def execute_query(query: str, values: tuple):
                 conn.commit()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+
+
+def execute_fetch_query(query: str, values: tuple):
+    config = load_config()
+
+    try:
+        with psycopg2.connect(**config) as conn:
+            with conn.cursor() as cur:
+                # execute the INSERT statement
+                cur.execute(query, values)
+                response = cur.fetchall()
+
+                # commit the changes to the database
+                conn.commit()
+
+                # return the fetch results
+                return response
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+
+    return
 
 
 def insert_document(values):
